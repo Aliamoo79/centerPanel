@@ -1,0 +1,89 @@
+// Prisma schema — VPN Reseller / Subscription Platform
+// Default datasource is SQLite for zero-config local/dev use.
+// For production, change provider to "postgresql" and set DATABASE_URL
+// in .env, e.g. postgresql://user:pass@host:5432/dbname
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQLite has no native enum support in Prisma, so panelType/status
+// fields below are plain Strings. The allowed values are enforced in the
+// application layer (zod schemas in src/routes/*). If you switch
+// `provider` to "postgresql" or "mysql" later, you can convert these back
+// to real `enum` types if you want DB-level enforcement too.
+//
+// PanelType values: "MARZBAN" | "THREEXUI" | "HIDDIFY" | "X4G" | "NAHAN"
+// Server status values: "ACTIVE" | "DISABLED"
+// User status values: "ACTIVE" | "DISABLED" | "EXPIRED"
+
+// A backend VPN server / panel instance.
+// Because everything downstream (users, configs, usage) references the
+// server only by its internal `id`, you can freely change `baseUrl`,
+// `username`, `password`, or even swap `panelType` without breaking any
+// existing user's subscription link — that's what makes "تعویض آدرس سرور"
+// painless.
+model Server {
+  id          String    @id @default(cuid())
+  name        String // friendly label, e.g. "Germany-1"
+  panelType   String // "MARZBAN" | "THREEXUI" | "HIDDIFY" | "X4G" | "NAHAN"
+  baseUrl     String // e.g. https://panel.example.com:8000
+  username    String // panel admin username
+  password    String // panel admin password (consider secrets manager in prod)
+  extra       String? // JSON blob for panel-specific extras (e.g. inboundIds for 3x-ui)
+  remarkPrefix String? // if set, every config's remark (the #fragment in vless://.../trojan://...) is rewritten to "{remarkPrefix}-{username}" instead of whatever the panel generated
+  status      String    @default("ACTIVE") // "ACTIVE" | "DISABLED"
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  links UserServerLink[]
+}
+
+// A reseller's end customer.
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  note         String?
+  subToken     String     @unique @default(cuid()) // used in the public /sub/:token URL
+  dataLimitGB  Float? // null = unlimited
+  ipLimit      Int? // null = unlimited simultaneous connections; only enforced by panels that support it (3x-ui, X4G)
+  expireAt     DateTime? // null = never
+  status       String     @default("ACTIVE") // "ACTIVE" | "DISABLED" | "EXPIRED"
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  links UserServerLink[]
+}
+
+// Join entity: which servers a given user has a provisioned account on,
+// plus the panel-side identifiers needed to query/update/delete it there.
+model UserServerLink {
+  id           String   @id @default(cuid())
+  userId       String
+  serverId     String
+  remoteId     String // the identifier/username the panel knows this account by
+  remoteExtra  String? // JSON blob, panel-specific (e.g. subscription UUID, inbound id)
+
+  // last known usage snapshot, refreshed on demand or via cron
+  usedBytes    Float    @default(0)
+  lastSyncedAt DateTime?
+  enabled      Boolean  @default(true) // per-server config toggle, independent of the user's overall status
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, serverId])
+}
+
+// Single admin account (you can extend to multiple admins later).
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}

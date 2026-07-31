@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.next/
+
+# secrets
+.env
+
+# database
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+*.db.bak
+
+# logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
