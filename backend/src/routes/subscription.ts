@@ -86,7 +86,13 @@ subscriptionRouter.get(
     }
 
     const ua = (req.headers["user-agent"] ?? "").toLowerCase();
-    const isBrowser = ua.includes("mozilla") || ua.includes("chrome") || ua.includes("safari") || ua.includes("firefox") || ua.includes("edge");
+    const accept = (req.headers["accept"] ?? "").toLowerCase();
+
+    // Serve the human-facing HTML page only to real browsers: they request
+    // text/html. VPN clients (v2rayNG, MahsaNG, ...) ask for */* (or nothing)
+    // and must always get the base64 config, no matter how browser-like their
+    // User-Agent looks.
+    const isBrowser = accept.includes("text/html") && (ua.includes("mozilla") || ua.includes("chrome") || ua.includes("safari") || ua.includes("firefox") || ua.includes("edge"));
 
     if (isBrowser) {
       const usage = await syncUserUsage(user.id);
