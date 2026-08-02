@@ -7,12 +7,14 @@ import { syncUserUsage } from "../services/usage";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
+import { randomInt } from "crypto";
 
 export const usersRouter = Router();
 usersRouter.use(requireAdmin);
 
 const createUserSchema = z.object({
-  username: z.string().min(3),
+  username: z.string().trim().min(3),
+  referrerId: z.string().nullable().optional(),
   note: z.string().optional(),
   dataLimitGB: z.number().positive().nullable().optional(),
   expireAt: z.string().datetime().nullable().optional(), // ISO string
@@ -25,7 +27,17 @@ function publicBaseUrl() {
 }
 
 function toPublicUser(user: any) {
-  return { ...user, subLink: `${publicBaseUrl()}/sub/${user.username}` };
+  return { ...user, subLink: `${publicBaseUrl()}/sub/${user.subToken}` };
+}
+
+async function makeInternalUsername(displayName: string) {
+  const base = displayName.trim().replace(/\s+/g, "_");
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const candidate = `${base}-${randomInt(100000, 1000000)}`;
+    const existing = await prisma.user.findUnique({ where: { username: candidate }, select: { id: true } });
+    if (!existing) return candidate;
+  }
+  throw new Error("Could not generate a unique panel username");
 }
 
 usersRouter.get(
@@ -33,7 +45,7 @@ usersRouter.get(
   asyncHandler(async (_req, res) => {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
-      include: { links: { include: { server: true } } },
+      include: { referrer: { select: { id: true, displayName: true } }, links: { include: { server: true } } },
     });
     res.json(users.map(toPublicUser));
   })
@@ -44,7 +56,7 @@ usersRouter.get(
   asyncHandler(async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
-      include: { links: { include: { server: true } } },
+      include: { referrer: { select: { id: true, displayName: true } }, referrals: { select: { id: true, displayName: true } }, links: { include: { server: true } } },
     });
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
@@ -62,10 +74,14 @@ usersRouter.post(
   asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = createUserSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    const { username, note, dataLimitGB, expireAt, ipLimit, serverIds } = parsed.data;
+    const { username: enteredName, referrerId, note, dataLimitGB, expireAt, ipLimit, serverIds } = parsed.data;
+    const displayName = enteredName.trim();
+    const username = await makeInternalUsername(displayName);
 
-    const existing = await prisma.user.findUnique({ where: { username } });
-    if (existing) return res.status(409).json({ error: "این نام کاربری قبلاً استفاده شده" });
+    if (referrerId) {
+      const referrer = await prisma.user.findUnique({ where: { id: referrerId }, select: { id: true } });
+      if (!referrer) return res.status(400).json({ error: "Referrer not found" });
+    }
 
     const servers = await prisma.server.findMany({ where: { id: { in: serverIds } } });
     if (servers.length === 0) return res.status(400).json({ error: "هیچ سروری پیدا نشد" });
@@ -73,6 +89,8 @@ usersRouter.post(
     const user = await prisma.user.create({
       data: {
         username,
+        displayName,
+        referrerId: referrerId ?? null,
         note,
         dataLimitGB: dataLimitGB ?? null,
         expireAt: expireAt ? new Date(expireAt) : null,
@@ -128,7 +146,7 @@ usersRouter.post(
 
     const fresh = await prisma.user.findUnique({
       where: { id: user.id },
-      include: { links: { include: { server: true } } },
+      include: { referrer: { select: { id: true, displayName: true } }, links: { include: { server: true } } },
     });
 
     res.status(201).json({ ...toPublicUser(fresh), provisioningFailures: failed });
@@ -137,6 +155,7 @@ usersRouter.post(
 
 const updateUserSchema = z.object({
   note: z.string().optional(),
+  referrerId: z.string().nullable().optional(),
   dataLimitGB: z.number().positive().nullable().optional(),
   expireAt: z.string().datetime().nullable().optional(),
   ipLimit: z.number().int().positive().nullable().optional(),
@@ -152,7 +171,12 @@ usersRouter.patch(
     const user = await prisma.user.findUnique({ where: { id: req.params.id }, include: { links: { include: { server: true } } } });
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
-    const { dataLimitGB, expireAt, ipLimit, status, note } = parsed.data;
+    const { dataLimitGB, expireAt, ipLimit, status, note, referrerId } = parsed.data;
+    if (referrerId === user.id) return res.status(400).json({ error: "A user cannot refer themselves" });
+    if (referrerId) {
+      const referrer = await prisma.user.findUnique({ where: { id: referrerId }, select: { id: true } });
+      if (!referrer) return res.status(400).json({ error: "Referrer not found" });
+    }
     const dataLimitBytes = dataLimitGB === undefined ? undefined : dataLimitGB ? dataLimitGB * 1024 * 1024 * 1024 : null;
     const expireDate = expireAt === undefined ? undefined : expireAt ? new Date(expireAt) : null;
 
@@ -195,6 +219,7 @@ usersRouter.patch(
         ...(expireDate !== undefined ? { expireAt: expireDate } : {}),
         ...(ipLimit !== undefined ? { ipLimit } : {}),
         ...(status !== undefined ? { status } : {}),
+        ...(referrerId !== undefined ? { referrerId } : {}),
       },
     });
 

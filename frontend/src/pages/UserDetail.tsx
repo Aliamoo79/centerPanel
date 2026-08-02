@@ -69,7 +69,7 @@ export default function UserDetail() {
   }
 
   async function handleDelete() {
-    if (!confirm(`کاربر «${user.username}» و همه‌ی اکانت‌هایش روی سرورها حذف شود؟`)) return;
+    if (!confirm(`کاربر «${user.displayName}» و همه‌ی اکانت‌هایش روی سرورها حذف شود؟`)) return;
     try {
       await api.deleteUser(user.id);
       toast.success("کاربر حذف شد");
@@ -118,9 +118,10 @@ export default function UserDetail() {
             ← بازگشت به کاربران
           </Link>
           <div className="flex items-center gap-2 mt-1">
-            <h1 className="text-xl font-semibold truncate">{user.username}</h1>
+            <h1 className="text-xl font-semibold truncate">{user.displayName}</h1>
           </div>
           {user.note && <p className="text-muted text-sm mt-1">{user.note}</p>}
+          {user.referrer && <p className="text-muted text-sm mt-1">معرف: {user.referrer.displayName}</p>}
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={() => setEditing((e) => !e)} className="flex-1 sm:flex-none">

@@ -47,7 +47,9 @@ model Server {
 // A reseller's end customer.
 model User {
   id           String     @id @default(cuid())
-  username     String     @unique
+  username     String     @unique // internal/panel username; new users receive a random suffix
+  displayName  String // customer-facing name; duplicates are allowed
+  referrerId   String?
   note         String?
   subToken     String     @unique @default(cuid()) // used in the public /sub/:token URL
   dataLimitGB  Float? // null = unlimited
@@ -58,6 +60,10 @@ model User {
   updatedAt    DateTime   @updatedAt
 
   links UserServerLink[]
+  referrer User? @relation("UserReferrals", fields: [referrerId], references: [id], onDelete: SetNull)
+  referrals User[] @relation("UserReferrals")
+
+  @@index([referrerId])
 }
 
 // Join entity: which servers a given user has a provisioned account on,

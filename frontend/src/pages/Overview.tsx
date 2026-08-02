@@ -50,7 +50,7 @@ export default function Overview() {
           <div className="space-y-2">
             {expiringSoon.map((u) => (
               <Link key={u.id} to={`/users/${u.id}`} className="flex items-center justify-between text-sm hover:text-warn transition-colors">
-                <span>{u.username}</span>
+                <span>{u.displayName}</span>
                 <span className="font-nums text-muted">{daysLeft(u.expireAt)} روز مانده</span>
               </Link>
             ))}

@@ -69,7 +69,7 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
             // more than one config (e.g. multiple clean IPs), a numeric
             // suffix keeps them distinguishable in the client's config list
             // instead of colliding on the exact same name.
-            const remark = i === 0 ? `${prefix}-${user.username}` : `${prefix}-${user.username}-${i + 1}`;
+            const remark = i === 0 ? `${prefix}-${user.displayName}` : `${prefix}-${user.displayName}-${i + 1}`;
             rawConfigs.push(withRemark(cfg.uri, remark));
           } else {
             rawConfigs.push(cfg.uri);

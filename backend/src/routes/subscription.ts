@@ -29,7 +29,7 @@ function htmlPage(user: any, usage: { usedBytes: number; dataLimitBytes: number 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>وضعیت اشتراک - ${user.username}</title>
+<title>وضعیت اشتراک - ${user.displayName}</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}
@@ -51,7 +51,7 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
 </style></head>
 <body>
 <div class="card">
-<h1>${user.username}</h1>
+<h1>${user.displayName}</h1>
 <div class="sub">وضعیت اشتراک VPN</div>
 
 <div class="gauge-wrap">

@@ -35,6 +35,7 @@ export default function Users() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title="افزودن کاربر جدید">
         <CreateUserForm
           servers={servers ?? []}
+          users={users ?? []}
           onClose={() => setShowForm(false)}
           onSaved={() => {
             setShowForm(false);
@@ -53,13 +54,14 @@ export default function Users() {
               <Card className="p-4 sm:p-5 hover:border-signal/40 transition-colors">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <p className="font-medium text-sm truncate">{u.username}</p>
+                    <p className="font-medium text-sm truncate">{u.displayName}</p>
                     <StatusBadge status={u.status} expireAt={u.expireAt} />
                   </div>
                   <span className="text-xs text-muted font-nums shrink-0">
                     {u.links?.length ?? 0} سرور · انقضا {formatDate(u.expireAt)}
                   </span>
                 </div>
+                {u.referrer && <p className="text-xs text-muted mb-3">معرف: {u.referrer.displayName}</p>}
                 <SignalGauge
                   used={used}
                   total={totalBytes}
@@ -72,6 +74,14 @@ export default function Users() {
         })}
         {users?.length === 0 && <EmptyState title="هنوز کاربری نساخته‌ای" hint="با «افزودن کاربر» شروع کن." />}
       </div>
+
+      <Card className="p-4 sm:p-5 overflow-x-auto">
+        <h2 className="text-sm font-medium mb-3">جدول معرفی کاربران</h2>
+        <table className="w-full text-sm">
+          <thead><tr className="text-muted border-b border-line"><th className="text-right py-2">کاربر</th><th className="text-right py-2">معرف</th></tr></thead>
+          <tbody>{users?.map((u) => <tr key={u.id} className="border-b border-line/50 last:border-0"><td className="py-2">{u.displayName}</td><td className="py-2 text-muted">{u.referrer?.displayName ?? "—"}</td></tr>)}</tbody>
+        </table>
+      </Card>
     </div>
   );
 }
@@ -88,13 +98,14 @@ function StatusBadge({ status, expireAt }: { status: string; expireAt: string | 
   return <span className={`text-[11px] px-2 py-0.5 rounded-full border shrink-0 ${styles[effective]}`}>{labels[effective]}</span>;
 }
 
-function CreateUserForm({ servers, onClose, onSaved }: { servers: any[]; onClose: () => void; onSaved: () => void }) {
+function CreateUserForm({ servers, users, onClose, onSaved }: { servers: any[]; users: any[]; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
   const [username, setUsername] = useState("");
   const [note, setNote] = useState("");
   const [dataLimitGB, setDataLimitGB] = useState("");
   const [expireDays, setExpireDays] = useState("30");
   const [ipLimit, setIpLimit] = useState("");
+  const [referrerId, setReferrerId] = useState("");
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,6 +123,7 @@ function CreateUserForm({ servers, onClose, onSaved }: { servers: any[]; onClose
       const expireAt = expireDays ? new Date(Date.now() + Number(expireDays) * 86400000).toISOString() : null;
       const res = await api.createUser({
         username,
+        referrerId: referrerId || null,
         note: note || undefined,
         dataLimitGB: dataLimitGB ? Number(dataLimitGB) : null,
         expireAt,
@@ -139,12 +151,19 @@ function CreateUserForm({ servers, onClose, onSaved }: { servers: any[]; onClose
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-muted mb-1.5">نام کاربری</label>
+            <label className="block text-xs text-muted mb-1.5">نام کاربر</label>
             <Input value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" required />
           </div>
           <div>
             <label className="block text-xs text-muted mb-1.5">یادداشت (اختیاری)</label>
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="مثلاً شماره تماس مشتری" />
+          </div>
+          <div>
+            <label className="block text-xs text-muted mb-1.5">معرف (اختیاری)</label>
+            <select className="w-full bg-panel2 border border-line rounded-lg px-3 py-2 text-sm" value={referrerId} onChange={(e) => setReferrerId(e.target.value)}>
+              <option value="">بدون معرف</option>
+              {users.map((u) => <option key={u.id} value={u.id}>{u.displayName}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-xs text-muted mb-1.5">سقف مصرف (GB) — خالی = نامحدود</label>
