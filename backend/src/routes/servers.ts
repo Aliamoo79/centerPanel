@@ -40,7 +40,15 @@ function cleanExtra(extra?: Record<string, any>): string | null {
 function toPublic(server: any) {
   // never send the panel password back to the client
   const { password, ...rest } = server;
-  return rest;
+  let extra: Record<string, any> | null = null;
+  if (rest.extra) {
+    try {
+      extra = typeof rest.extra === "string" ? JSON.parse(rest.extra) : rest.extra;
+    } catch {
+      extra = null;
+    }
+  }
+  return { ...rest, extra, hasPassword: Boolean(password) };
 }
 
 serversRouter.get(

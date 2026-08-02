@@ -238,7 +238,7 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
           <div className="sm:col-span-2">
             <label className="block text-xs text-muted mb-1.5">
               {panelType === "NAHAN" ? "Master Key پنل" : "رمز عبور ادمین پنل"}
-              {initial && <span className="text-muted"> (برای تغییر پر کن)</span>}
+              {initial && <span className="text-muted"> {initial.hasPassword ? "(ذخیره شده؛ برای تغییر پر کن)" : "(ثبت نشده)"}</span>}
             </label>
             <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
           </div>
@@ -261,7 +261,7 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
             <div>
               <label className="block text-xs text-muted mb-1.5">
                 {panelType === "HIDDIFY" ? "کلید API ادمین" : "رمز عبور پنل"}
-                {initial && <span className="text-muted"> (برای تغییر پر کن)</span>}
+                {initial && <span className="text-muted"> {initial.hasPassword ? "(ذخیره شده؛ برای تغییر پر کن)" : "(ثبت نشده)"}</span>}
               </label>
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
             </div>
