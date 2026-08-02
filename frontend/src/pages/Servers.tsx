@@ -135,7 +135,9 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
   const [remarkPrefix, setRemarkPrefix] = useState(initial?.remarkPrefix ?? "");
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
-  const [extraInboundId, setExtraInboundId] = useState("");
+  const [extraInboundId, setExtraInboundId] = useState(
+    initial?.extra?.inboundId !== undefined ? String(initial.extra.inboundId) : ""
+  );
   const [useToken, setUseToken] = useState(initial?.extra?.authMethod === "token");
   const [x4gProtocol, setX4gProtocol] = useState(initial?.extra?.protocol ?? "vless-ws");
   const [x4gPort, setX4gPort] = useState(initial?.extra?.port ? String(initial.extra.port) : "");

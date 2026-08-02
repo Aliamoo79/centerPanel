@@ -84,11 +84,23 @@ export class ThreeXUIAdapter implements PanelAdapter {
   private async getInbound(inboundId: number, fresh = false): Promise<any> {
     if (this.inboundCache && this.inboundCache.id === inboundId && !fresh) return this.inboundCache;
     const c = await this.authedClient();
-    const res = await c.get(`/panel/api/inbounds/get/${inboundId}`);
-    if (!res.data?.success || !res.data.obj) {
-      throw new Error(res.data?.msg ?? `اینباند شماره ${inboundId} در پنل پیدا نشد`);
+    let payload: any;
+    try {
+      const res = await c.get(`/panel/api/inbounds/get/${inboundId}`);
+      payload = res.data;
+    } catch (err: any) {
+      // Some 3x-ui releases do not expose the single-inbound endpoint even
+      // though the list endpoint is available. Fall back to the list instead.
+      if (err?.response?.status !== 404) throw err;
+      const listRes = await c.get("/panel/api/inbounds/list");
+      const items = Array.isArray(listRes.data?.obj) ? listRes.data.obj : [];
+      const inbound = items.find((item: any) => Number(item.id) === inboundId);
+      payload = inbound ? { success: true, obj: inbound } : listRes.data;
     }
-    const obj = res.data.obj;
+    if (!payload?.success || !payload.obj || Array.isArray(payload.obj)) {
+      throw new Error(payload?.msg ?? `Inbound ${inboundId} was not found in the 3x-ui panel`);
+    }
+    const obj = payload.obj;
     const settings = typeof obj.settings === "string" ? JSON.parse(obj.settings || "{}") : (obj.settings ?? {});
     const streamSettings =
       typeof obj.streamSettings === "string" ? JSON.parse(obj.streamSettings || "{}") : (obj.streamSettings ?? {});
