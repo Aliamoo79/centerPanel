@@ -74,9 +74,42 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
     }
   }
 
+  const dataLimitBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
+
+  if (dataLimitBytes !== null && totalUsed >= dataLimitBytes) {
+    const linksToDisable = user.links.filter((link) => link.enabled);
+    const results = await Promise.allSettled(
+      linksToDisable.map(async (link) => {
+        const adapter = getAdapter(link.server.panelType as any, link.server);
+        const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+        await adapter.setEnabled(link.remoteId, false, remoteExtra);
+        await prisma.userServerLink.update({ where: { id: link.id }, data: { enabled: false } });
+        const snapshot = perServer.find((item) => item.serverId === link.serverId);
+        if (snapshot) snapshot.enabled = false;
+      })
+    );
+
+    await prisma.user.update({ where: { id: user.id }, data: { status: "DISABLED" } });
+
+    const failures = results
+      .map((result, index) => result.status === "rejected"
+        ? { server: linksToDisable[index].server.name, error: describePanelError(result.reason) }
+        : null)
+      .filter(Boolean);
+
+    if (user.status !== "DISABLED" || linksToDisable.length > 0) {
+      logger.warn("user_total_quota_exceeded", `Combined usage limit reached for '${user.username}'; all server configs were disabled`, {
+        userId: user.id,
+        usedBytes: totalUsed,
+        dataLimitBytes,
+        failures,
+      });
+    }
+  }
+
   return {
     usedBytes: totalUsed,
-    dataLimitBytes: user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null,
+    dataLimitBytes,
     expireAt: user.expireAt,
     perServer,
   };

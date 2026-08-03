@@ -62,7 +62,8 @@ usersRouter.get(
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
     const usage = await syncUserUsage(user.id);
-    res.json({ ...toPublicUser(user), usage });
+    const quotaExceeded = usage.dataLimitBytes !== null && usage.usedBytes >= usage.dataLimitBytes;
+    res.json({ ...toPublicUser(user), ...(quotaExceeded ? { status: "DISABLED" } : {}), usage });
   })
 );
 
@@ -203,6 +204,18 @@ usersRouter.patch(
           : null
       )
       .filter(Boolean) as { server: string; error: string }[];
+
+    if (status !== undefined) {
+      const successfulLinkIds = results
+        .map((result, index) => result.status === "fulfilled" ? user.links[index].id : null)
+        .filter((id): id is string => id !== null);
+      if (successfulLinkIds.length > 0) {
+        await prisma.userServerLink.updateMany({
+          where: { id: { in: successfulLinkIds } },
+          data: { enabled: status === "ACTIVE" },
+        });
+      }
+    }
 
     if (failed.length > 0) {
       logger.warn("user_update_partial_failure", `به‌روزرسانی کاربر «${user.username}» روی برخی سرورها ناموفق بود`, {

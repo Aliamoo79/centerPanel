@@ -49,8 +49,14 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
   });
   if (!user) return null;
 
+  // Sync first so a request that crosses the combined quota cannot receive
+  // one final set of configs before background enforcement catches up.
+  const usage = await syncUserUsage(user.id);
+  const quotaExceeded = usage.dataLimitBytes !== null && usage.usedBytes >= usage.dataLimitBytes;
+
   // Compute effective status (expiry check happens live, not just off the stored flag)
   let status = user.status as "ACTIVE" | "DISABLED" | "EXPIRED";
+  if (quotaExceeded) status = "DISABLED";
   if (user.expireAt && user.expireAt.getTime() < Date.now()) status = "EXPIRED";
 
   const rawConfigs: string[] = [];
@@ -84,7 +90,6 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
     }
   }
 
-  const usage = await syncUserUsage(user.id);
   const total = usage.dataLimitBytes ?? 0; // 0 conventionally means unlimited to most clients
   const expireEpoch = user.expireAt ? Math.floor(user.expireAt.getTime() / 1000) : 0;
   const userInfoHeader = `upload=0; download=${Math.floor(usage.usedBytes)}; total=${Math.floor(total)}; expire=${expireEpoch}`;
