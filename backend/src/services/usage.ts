@@ -89,7 +89,7 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
       })
     );
 
-    await prisma.user.update({ where: { id: user.id }, data: { status: "DISABLED" } });
+    await prisma.user.update({ where: { id: user.id }, data: { status: "EXPIRED" } });
 
     const failures = results
       .map((result, index) => result.status === "rejected"
@@ -97,7 +97,7 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
         : null)
       .filter(Boolean);
 
-    if (user.status !== "DISABLED" || linksToDisable.length > 0) {
+    if (user.status !== "EXPIRED" || linksToDisable.length > 0) {
       logger.warn("user_total_quota_exceeded", `Combined usage limit reached for '${user.username}'; all server configs were disabled`, {
         userId: user.id,
         usedBytes: totalUsed,

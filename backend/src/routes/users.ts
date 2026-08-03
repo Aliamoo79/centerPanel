@@ -80,7 +80,7 @@ usersRouter.get(
 
     const usage = await syncUserUsage(user.id);
     const quotaExceeded = usage.dataLimitBytes !== null && usage.usedBytes >= usage.dataLimitBytes;
-    res.json({ ...toPublicUser(user), ...(quotaExceeded ? { status: "DISABLED" } : {}), usage });
+    res.json({ ...toPublicUser(user), ...(quotaExceeded ? { status: "EXPIRED" } : {}), usage });
   })
 );
 

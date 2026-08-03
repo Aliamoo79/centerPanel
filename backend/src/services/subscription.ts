@@ -56,7 +56,7 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
 
   // Compute effective status (expiry check happens live, not just off the stored flag)
   let status = user.status as "ACTIVE" | "DISABLED" | "EXPIRED";
-  if (quotaExceeded) status = "DISABLED";
+  if (quotaExceeded) status = "EXPIRED";
   if (user.expireAt && user.expireAt.getTime() < Date.now()) status = "EXPIRED";
 
   const rawConfigs: string[] = [];
