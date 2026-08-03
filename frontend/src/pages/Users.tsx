@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { Card, Button, Input, EmptyState, SignalGauge, Modal } from "../components/ui";
+import { Card, Button, Input, EmptyState, Modal, Select } from "../components/ui";
 import { formatBytes, formatDate } from "../lib/format";
 import { useToast } from "../lib/toast";
 
@@ -10,6 +10,10 @@ export default function Users() {
   const [users, setUsers] = useState<any[] | null>(null);
   const [servers, setServers] = useState<any[] | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [serverFilter, setServerFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
 
   function reload(showError = true) {
     api.listUsers().then(setUsers).catch((err) => {
@@ -33,6 +37,21 @@ export default function Users() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => setPage(1), [search, statusFilter, serverFilter]);
+
+  const filteredUsers = (users ?? []).filter((user) => {
+    const needle = search.trim().toLocaleLowerCase();
+    const matchesSearch = !needle || [user.displayName, user.username, user.note, user.referrer?.displayName]
+      .some((value) => String(value ?? "").toLocaleLowerCase().includes(needle));
+    const matchesStatus = statusFilter === "ALL" || effectiveStatus(user.status, user.expireAt) === statusFilter;
+    const matchesServer = serverFilter === "ALL" || user.links?.some((link: any) => link.serverId === serverFilter);
+    return matchesSearch && matchesStatus && matchesServer;
+  });
+  const pageSize = 10;
+  const pageCount = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const visibleUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="space-y-6">
@@ -59,50 +78,77 @@ export default function Users() {
         />
       </Modal>
 
-      <div className="space-y-3">
-        {users?.map((u) => {
-          const used = u.links?.reduce((s: number, l: any) => s + (l.usedBytes ?? 0), 0) ?? 0;
-          const totalBytes = u.dataLimitGB ? u.dataLimitGB * 1024 * 1024 * 1024 : null;
-          return (
-            <Link key={u.id} to={`/users/${u.id}`}>
-              <Card className="p-4 sm:p-5 hover:border-signal/40 transition-colors">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <p className="font-medium text-sm truncate">{u.displayName}</p>
-                    <StatusBadge status={u.status} expireAt={u.expireAt} />
-                  </div>
-                  <span className="text-xs text-muted font-nums shrink-0">
-                    {u.links?.length ?? 0} سرور · انقضا {formatDate(u.expireAt)}
-                  </span>
-                </div>
-                {u.referrer && <p className="text-xs text-muted mb-3">معرف: {u.referrer.displayName}</p>}
-                <SignalGauge
-                  used={used}
-                  total={totalBytes}
-                  labelUsed={formatBytes(used)}
-                  labelTotal={totalBytes ? formatBytes(totalBytes) : ""}
-                />
-              </Card>
-            </Link>
-          );
-        })}
-        {users?.length === 0 && <EmptyState title="هنوز کاربری نساخته‌ای" hint="با «افزودن کاربر» شروع کن." />}
-      </div>
+      <Card className="p-4 sm:p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="جستجو نام، یادداشت یا معرف..." />
+          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="ALL">همه وضعیت‌ها</option>
+            <option value="ACTIVE">فعال</option>
+            <option value="DISABLED">غیرفعال</option>
+            <option value="EXPIRED">منقضی</option>
+          </Select>
+          <Select value={serverFilter} onChange={(event) => setServerFilter(event.target.value)}>
+            <option value="ALL">همه سرورها</option>
+            {(servers ?? []).map((server) => <option key={server.id} value={server.id}>{server.name}</option>)}
+          </Select>
+        </div>
 
-      <Card className="p-4 sm:p-5 overflow-x-auto">
-        <h2 className="text-sm font-medium mb-3">جدول معرفی کاربران</h2>
-        <table className="w-full text-sm">
-          <thead><tr className="text-muted border-b border-line"><th className="text-right py-2">کاربر</th><th className="text-right py-2">معرف</th></tr></thead>
-          <tbody>{users?.map((u) => <tr key={u.id} className="border-b border-line/50 last:border-0"><td className="py-2">{u.displayName}</td><td className="py-2 text-muted">{u.referrer?.displayName ?? "—"}</td></tr>)}</tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[850px] text-sm">
+            <thead>
+              <tr className="text-muted border-b border-line">
+                <th className="text-right px-2 py-3">کاربر</th>
+                <th className="text-right px-2 py-3">وضعیت</th>
+                <th className="text-right px-2 py-3">مصرف کل</th>
+                <th className="text-right px-2 py-3">سرورها</th>
+                <th className="text-right px-2 py-3">معرف</th>
+                <th className="text-right px-2 py-3">انقضا</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleUsers.map((user) => {
+                const used = user.links?.reduce((sum: number, link: any) => sum + (link.usedBytes ?? 0), 0) ?? 0;
+                const total = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
+                return (
+                  <tr key={user.id} className="border-b border-line/50 last:border-0 hover:bg-panel2/60 transition-colors">
+                    <td className="px-2 py-3">
+                      <Link to={`/users/${user.id}`} className="font-medium hover:text-signal">{user.displayName}</Link>
+                      {user.note && <p className="text-xs text-muted mt-0.5 max-w-48 truncate">{user.note}</p>}
+                    </td>
+                    <td className="px-2 py-3"><StatusBadge status={user.status} expireAt={user.expireAt} /></td>
+                    <td className="px-2 py-3 font-nums whitespace-nowrap">
+                      {formatBytes(used)} <span className="text-muted">/ {total ? formatBytes(total) : "نامحدود"}</span>
+                    </td>
+                    <td className="px-2 py-3 text-muted">{user.links?.length ?? 0}</td>
+                    <td className="px-2 py-3 text-muted">{user.referrer?.displayName ?? "—"}</td>
+                    <td className="px-2 py-3 text-muted font-nums whitespace-nowrap">{formatDate(user.expireAt)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {users?.length === 0 && <EmptyState title="هنوز کاربری نساخته‌ای" hint="با «افزودن کاربر» شروع کن." />}
+        {users && users.length > 0 && filteredUsers.length === 0 && <EmptyState title="کاربری با این فیلترها پیدا نشد" />}
+
+        {filteredUsers.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-line">
+            <p className="text-xs text-muted">نمایش {(currentPage - 1) * pageSize + 1} تا {Math.min(currentPage * pageSize, filteredUsers.length)} از {filteredUsers.length} کاربر</p>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" disabled={currentPage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>قبلی</Button>
+              <span className="text-sm font-nums px-2">{currentPage} / {pageCount}</span>
+              <Button variant="ghost" disabled={currentPage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>بعدی</Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
 }
 
 function StatusBadge({ status, expireAt }: { status: string; expireAt: string | null }) {
-  const expired = expireAt && new Date(expireAt).getTime() < Date.now();
-  const effective = expired ? "EXPIRED" : status;
+  const effective = effectiveStatus(status, expireAt);
   const styles: Record<string, string> = {
     ACTIVE: "bg-mint/10 text-mint border-mint/30",
     DISABLED: "bg-muted/10 text-muted border-line",
@@ -110,6 +156,10 @@ function StatusBadge({ status, expireAt }: { status: string; expireAt: string | 
   };
   const labels: Record<string, string> = { ACTIVE: "فعال", DISABLED: "غیرفعال", EXPIRED: "منقضی" };
   return <span className={`text-[11px] px-2 py-0.5 rounded-full border shrink-0 ${styles[effective]}`}>{labels[effective]}</span>;
+}
+
+function effectiveStatus(status: string, expireAt: string | null) {
+  return expireAt && new Date(expireAt).getTime() < Date.now() ? "EXPIRED" : status;
 }
 
 function CreateUserForm({ servers, users, onClose, onSaved }: { servers: any[]; users: any[]; onClose: () => void; onSaved: () => void }) {
