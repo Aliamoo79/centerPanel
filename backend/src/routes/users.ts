@@ -60,9 +60,12 @@ usersRouter.get(
 usersRouter.post(
   "/usage/refresh",
   asyncHandler(async (_req, res) => {
-    await syncAllUserUsage();
-    const users = await findPublicUsers();
-    res.json(users.map(toPublicUser));
+    // Start (or reuse) the shared refresh run, but do not make the browser
+    // wait for every panel. GET /users exposes snapshots as each user finishes.
+    void syncAllUserUsage().catch((err) => {
+      logger.error("user_usage_refresh_failed", describePanelError(err));
+    });
+    res.status(202).json({ started: true });
   })
 );
 

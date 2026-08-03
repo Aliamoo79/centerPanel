@@ -17,16 +17,20 @@ export default function Users() {
     });
   }
   function refreshUsage(showError = false) {
-    api.refreshUserUsage().then(setUsers).catch((err) => {
+    api.refreshUserUsage().catch((err) => {
       if (showError) toast.error(err.message ?? "خطا در به‌روزرسانی مصرف کاربران");
     });
   }
   useEffect(() => {
     reload();
     refreshUsage();
+    const cacheRefresh = window.setInterval(() => reload(false), 5_000);
     const usageRefresh = window.setInterval(() => refreshUsage(), 30_000);
     api.listServers().then(setServers).catch((err) => toast.error(err.message ?? "خطا در دریافت سرورها"));
-    return () => window.clearInterval(usageRefresh);
+    return () => {
+      window.clearInterval(cacheRefresh);
+      window.clearInterval(usageRefresh);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

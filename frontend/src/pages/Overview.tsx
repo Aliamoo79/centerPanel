@@ -16,11 +16,15 @@ export default function Overview() {
       if (showError) toast.error(err.message ?? "خطا در دریافت کاربران");
     });
     reloadUsers();
-    api.refreshUserUsage().then(setUsers).catch(() => undefined);
+    api.refreshUserUsage().catch(() => undefined);
+    const cacheRefresh = window.setInterval(() => reloadUsers(false), 5_000);
     const usageRefresh = window.setInterval(() => {
-      api.refreshUserUsage().then(setUsers).catch(() => undefined);
+      api.refreshUserUsage().catch(() => undefined);
     }, 30_000);
-    return () => window.clearInterval(usageRefresh);
+    return () => {
+      window.clearInterval(cacheRefresh);
+      window.clearInterval(usageRefresh);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
