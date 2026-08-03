@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, Button, Input, EmptyState, Modal, Select } from "../components/ui";
 import { formatBytes, formatDate } from "../lib/format";
@@ -7,6 +7,7 @@ import { useToast } from "../lib/toast";
 
 export default function Users() {
   const toast = useToast();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<any[] | null>(null);
   const [servers, setServers] = useState<any[] | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -94,15 +95,15 @@ export default function Users() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[850px] text-sm">
+          <table dir="rtl" className="w-full min-w-[850px] text-sm text-right">
             <thead>
               <tr className="text-muted border-b border-line">
-                <th className="text-right px-2 py-3">کاربر</th>
-                <th className="text-right px-2 py-3">وضعیت</th>
-                <th className="text-right px-2 py-3">مصرف کل</th>
-                <th className="text-right px-2 py-3">سرورها</th>
-                <th className="text-right px-2 py-3">معرف</th>
-                <th className="text-right px-2 py-3">انقضا</th>
+                <th dir="rtl" className="text-right px-2 py-3">کاربر</th>
+                <th dir="rtl" className="text-right px-2 py-3">وضعیت</th>
+                <th dir="rtl" className="text-right px-2 py-3">مصرف کل</th>
+                <th dir="rtl" className="text-right px-2 py-3">سرورها</th>
+                <th dir="rtl" className="text-right px-2 py-3">معرف</th>
+                <th dir="rtl" className="text-right px-2 py-3">انقضا</th>
               </tr>
             </thead>
             <tbody>
@@ -110,18 +111,31 @@ export default function Users() {
                 const used = user.links?.reduce((sum: number, link: any) => sum + (link.usedBytes ?? 0), 0) ?? 0;
                 const total = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
                 return (
-                  <tr key={user.id} className="border-b border-line/50 last:border-0 hover:bg-panel2/60 transition-colors">
-                    <td className="px-2 py-3">
-                      <Link to={`/users/${user.id}`} className="font-medium hover:text-signal">{user.displayName}</Link>
+                  <tr
+                    key={user.id}
+                    role="link"
+                    tabIndex={0}
+                    aria-label={`باز کردن کاربر ${user.displayName}`}
+                    onClick={() => navigate(`/users/${user.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        navigate(`/users/${user.id}`);
+                      }
+                    }}
+                    className="group cursor-pointer border-b border-line/50 last:border-0 hover:bg-panel2/60 focus:bg-panel2/60 focus:outline-none transition-colors"
+                  >
+                    <td dir="rtl" className="text-right px-2 py-3">
+                      <span className="font-medium group-hover:text-signal">{user.displayName}</span>
                       {user.note && <p className="text-xs text-muted mt-0.5 max-w-48 truncate">{user.note}</p>}
                     </td>
-                    <td className="px-2 py-3"><StatusBadge status={user.status} expireAt={user.expireAt} /></td>
-                    <td className="px-2 py-3 font-nums whitespace-nowrap">
+                    <td dir="rtl" className="text-right px-2 py-3"><StatusBadge status={user.status} expireAt={user.expireAt} /></td>
+                    <td dir="rtl" className="text-right px-2 py-3 font-nums whitespace-nowrap">
                       {formatBytes(used)} <span className="text-muted">/ {total ? formatBytes(total) : "نامحدود"}</span>
                     </td>
-                    <td className="px-2 py-3 text-muted">{user.links?.length ?? 0}</td>
-                    <td className="px-2 py-3 text-muted">{user.referrer?.displayName ?? "—"}</td>
-                    <td className="px-2 py-3 text-muted font-nums whitespace-nowrap">{formatDate(user.expireAt)}</td>
+                    <td dir="rtl" className="text-right px-2 py-3 text-muted">{user.links?.length ?? 0}</td>
+                    <td dir="rtl" className="text-right px-2 py-3 text-muted">{user.referrer?.displayName ?? "—"}</td>
+                    <td dir="rtl" className="text-right px-2 py-3 text-muted font-nums whitespace-nowrap">{formatDate(user.expireAt)}</td>
                   </tr>
                 );
               })}
