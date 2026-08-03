@@ -16,7 +16,10 @@ export default function Overview() {
       if (showError) toast.error(err.message ?? "خطا در دریافت کاربران");
     });
     reloadUsers();
-    const usageRefresh = window.setInterval(() => reloadUsers(false), 30_000);
+    api.refreshUserUsage().then(setUsers).catch(() => undefined);
+    const usageRefresh = window.setInterval(() => {
+      api.refreshUserUsage().then(setUsers).catch(() => undefined);
+    }, 30_000);
     return () => window.clearInterval(usageRefresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

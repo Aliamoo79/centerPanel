@@ -40,14 +40,28 @@ async function makeInternalUsername(displayName: string) {
   throw new Error("Could not generate a unique panel username");
 }
 
+function findPublicUsers() {
+  return prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { referrer: { select: { id: true, displayName: true } }, links: { include: { server: true } } },
+  });
+}
+
 usersRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
+    const users = await findPublicUsers();
+    res.json(users.map(toPublicUser));
+  })
+);
+
+// The page first loads cached users through GET /, then calls this endpoint.
+// Slow panels therefore never hold up the initial render.
+usersRouter.post(
+  "/usage/refresh",
+  asyncHandler(async (_req, res) => {
     await syncAllUserUsage();
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { referrer: { select: { id: true, displayName: true } }, links: { include: { server: true } } },
-    });
+    const users = await findPublicUsers();
     res.json(users.map(toPublicUser));
   })
 );
