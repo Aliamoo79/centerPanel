@@ -81,3 +81,30 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
     perServer,
   };
 }
+
+let allUsersSync: Promise<void> | null = null;
+
+/** Refresh every cached usage snapshot without duplicating overlapping runs. */
+export function syncAllUserUsage(concurrency = 5): Promise<void> {
+  if (allUsersSync) return allUsersSync;
+
+  allUsersSync = (async () => {
+    const users = await prisma.user.findMany({ select: { id: true } });
+    let nextIndex = 0;
+
+    async function worker() {
+      while (nextIndex < users.length) {
+        const user = users[nextIndex++];
+        await syncUserUsage(user.id).catch((err) => {
+          logger.warn("user_usage_background_sync_failed", describePanelError(err), { userId: user.id });
+        });
+      }
+    }
+
+    await Promise.all(Array.from({ length: Math.min(concurrency, users.length) }, worker));
+  })().finally(() => {
+    allUsersSync = null;
+  });
+
+  return allUsersSync;
+}

@@ -11,12 +11,16 @@ export default function Users() {
   const [servers, setServers] = useState<any[] | null>(null);
   const [showForm, setShowForm] = useState(false);
 
-  function reload() {
-    api.listUsers().then(setUsers).catch((err) => toast.error(err.message ?? "خطا در دریافت کاربران"));
+  function reload(showError = true) {
+    api.listUsers().then(setUsers).catch((err) => {
+      if (showError) toast.error(err.message ?? "خطا در دریافت کاربران");
+    });
   }
   useEffect(() => {
     reload();
+    const usageRefresh = window.setInterval(() => reload(false), 30_000);
     api.listServers().then(setServers).catch((err) => toast.error(err.message ?? "خطا در دریافت سرورها"));
+    return () => window.clearInterval(usageRefresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

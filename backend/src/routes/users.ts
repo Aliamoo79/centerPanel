@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAdmin, AuthedRequest } from "../middleware/auth";
 import { getAdapter } from "../adapters";
-import { syncUserUsage } from "../services/usage";
+import { syncAllUserUsage, syncUserUsage } from "../services/usage";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
@@ -43,6 +43,7 @@ async function makeInternalUsername(displayName: string) {
 usersRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
+    await syncAllUserUsage();
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       include: { referrer: { select: { id: true, displayName: true } }, links: { include: { server: true } } },

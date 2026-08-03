@@ -12,7 +12,12 @@ export default function Overview() {
 
   useEffect(() => {
     api.listServers().then(setServers).catch((err) => toast.error(err.message ?? "خطا در دریافت سرورها"));
-    api.listUsers().then(setUsers).catch((err) => toast.error(err.message ?? "خطا در دریافت کاربران"));
+    const reloadUsers = (showError = true) => api.listUsers().then(setUsers).catch((err) => {
+      if (showError) toast.error(err.message ?? "خطا در دریافت کاربران");
+    });
+    reloadUsers();
+    const usageRefresh = window.setInterval(() => reloadUsers(false), 30_000);
+    return () => window.clearInterval(usageRefresh);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

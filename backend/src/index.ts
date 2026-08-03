@@ -8,6 +8,7 @@ import { subscriptionRouter } from "./routes/subscription";
 import { logsRouter } from "./routes/logs";
 import { requestLogger, notFoundHandler, errorHandler } from "./middleware/observability";
 import { logger } from "./lib/logger";
+import { syncAllUserUsage } from "./services/usage";
 
 const app = express();
 app.use(cors());
@@ -40,4 +41,15 @@ process.on("uncaughtException", (err) => {
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {
   logger.info("startup", `VPN platform API listening on :${port}`);
+
+  const configuredInterval = Number(process.env.USAGE_SYNC_INTERVAL_MS ?? 60_000);
+  const intervalMs = Number.isFinite(configuredInterval) ? Math.max(15_000, configuredInterval) : 60_000;
+  const refreshUsage = () => {
+    void syncAllUserUsage().catch((err: any) => {
+      logger.error("usage_background_sync_failed", err?.message ?? String(err));
+    });
+  };
+
+  refreshUsage();
+  setInterval(refreshUsage, intervalMs).unref();
 });
