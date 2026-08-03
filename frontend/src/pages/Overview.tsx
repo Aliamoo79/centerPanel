@@ -29,9 +29,10 @@ export default function Overview() {
   }, []);
 
   const totalUsage = users?.reduce((sum, u) => sum + (u.links?.reduce((s: number, l: any) => s + (l.usedBytes ?? 0), 0) ?? 0), 0) ?? 0;
+  const expiredUsers = users?.filter((u) => isExpiredUser(u)) ?? [];
   const expiringSoon = users?.filter((u) => {
     const d = daysLeft(u.expireAt);
-    return d !== null && d <= 3 && d >= 0;
+    return !isExpiredUser(u) && d !== null && d <= 3 && d >= 0;
   }) ?? [];
 
   return (
@@ -56,19 +57,35 @@ export default function Overview() {
         </Card>
       </div>
 
-      {expiringSoon.length > 0 && (
-        <Card className="p-5 border-warn/30">
-          <p className="text-sm font-medium text-warn mb-3">در حال انقضا (کمتر از ۳ روز)</p>
-          <div className="space-y-2">
-            {expiringSoon.map((u) => (
-              <Link key={u.id} to={`/users/${u.id}`} className="flex items-center justify-between text-sm hover:text-warn transition-colors">
-                <span>{u.displayName}</span>
-                <span className="font-nums text-muted">{daysLeft(u.expireAt)} روز مانده</span>
-              </Link>
-            ))}
-          </div>
-        </Card>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {expiredUsers.length > 0 && (
+          <Card className="p-5 border-danger/30">
+            <p className="text-sm font-medium text-danger mb-3">منقضی‌شده‌ها</p>
+            <div className="space-y-2">
+              {expiredUsers.map((u) => (
+                <Link key={u.id} to={`/users/${u.id}`} className="flex items-center justify-between text-sm hover:text-danger transition-colors">
+                  <span>{u.displayName}</span>
+                  <span className="text-danger">منقضی</span>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {expiringSoon.length > 0 && (
+          <Card className="p-5 border-warn/30">
+            <p className="text-sm font-medium text-warn mb-3">در حال انقضا (کمتر از ۳ روز)</p>
+            <div className="space-y-2">
+              {expiringSoon.map((u) => (
+                <Link key={u.id} to={`/users/${u.id}`} className="flex items-center justify-between text-sm hover:text-warn transition-colors">
+                  <span>{u.displayName}</span>
+                  <span className="font-nums text-muted">{daysLeft(u.expireAt)} روز مانده</span>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        )}
+      </div>
 
       <div>
         <h2 className="text-sm font-medium text-muted mb-3">سرورها</h2>
@@ -90,4 +107,8 @@ export default function Overview() {
       </div>
     </div>
   );
+}
+
+function isExpiredUser(user: any) {
+  return user.status === "EXPIRED" || (user.expireAt && new Date(user.expireAt).getTime() < Date.now());
 }
