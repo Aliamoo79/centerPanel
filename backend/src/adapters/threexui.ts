@@ -213,6 +213,10 @@ export class ThreeXUIAdapter implements PanelAdapter {
       password: rec.password,
       auth: rec.auth,
       flow: rec.flow,
+      // Newer 3x-ui releases keep the VLESS encryption mode on the client
+      // record. The update endpoint replaces the whole record, so omitting
+      // this field silently resets it on unrelated user updates.
+      encryption: rec.encryption,
       security: rec.security,
       subId: rec.subId,
       limitIp: rec.limitIp,
@@ -315,6 +319,10 @@ function buildThreeXUIUri(inbound: any, client: any, host: string): string {
   }
 
   if (inbound.protocol === "vless") {
+    // VLESS share URIs require the encryption query field. Read the value
+    // returned by 3x-ui and retain compatibility with older panels, which
+    // omit it because VLESS historically only supported `none`.
+    params.set("encryption", client.encryption || "none");
     if (client.flow) params.set("flow", client.flow);
     return `vless://${client.id}@${host}:${port}?${params.toString()}#${encodeURIComponent(remark)}`;
   }
