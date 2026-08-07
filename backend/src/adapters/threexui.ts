@@ -35,12 +35,10 @@ import {
 // whose obj.settings/obj.streamSettings come back already-parsed as JSON
 // objects in v3 (legacy panels send JSON strings) — handle both.
 //
-// There is no "get share links" API at all — 3x-ui only exposes a
-// separate, optionally-enabled subscription HTTP server whose
-// host/port/path varies per install. Instead, getConfigs() builds the
-// vless/vmess/trojan share URI directly from the inbound's own
-// streamSettings (network/security/ws/grpc/reality/tls), which is
-// reliable regardless of whether that subscription server is even on.
+// Modern 3x-ui exposes its own generated share links through the clients
+// API. Those links are authoritative: they can contain client-specific
+// values and panel settings which cannot be reconstructed completely from
+// streamSettings. Older releases fall back to a best-effort local builder.
 export class ThreeXUIAdapter implements PanelAdapter {
   private client: AxiosInstance;
   private cookie: string | null = null;
@@ -262,6 +260,27 @@ export class ThreeXUIAdapter implements PanelAdapter {
   }
 
   async getConfigs(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteConfig[]> {
+    const c = await this.authedClient();
+    try {
+      const res = await c.get(`/panel/api/clients/links/${encodeURIComponent(remoteId)}`);
+      const obj = res.data?.obj;
+      const links = (Array.isArray(obj) ? obj : Array.isArray(obj?.links) ? obj.links : [])
+        .filter((link: unknown): link is string => typeof link === "string" && link.includes("://"));
+
+      if (res.data?.success !== false && links.length > 0) {
+        return links.map((uri: string) => ({
+          protocol: uri.slice(0, uri.indexOf(":")),
+          uri,
+          label: remoteId,
+        }));
+      }
+    } catch (err: any) {
+      // Only old panels lacking this endpoint use reconstruction. Authentication,
+      // server, and other API errors should remain visible instead of returning a
+      // plausible-looking but incomplete configuration.
+      if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
+    }
+
     const inboundId = (remoteExtra?.inboundId as number) ?? this.inboundId;
     const clientId = remoteExtra?.clientId as string | undefined;
     const inbound = await this.getInbound(inboundId, true);
