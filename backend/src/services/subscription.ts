@@ -60,6 +60,7 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
   if (user.expireAt && user.expireAt.getTime() < Date.now()) status = "EXPIRED";
 
   const rawConfigs: string[] = [];
+  const seenConfigUris = new Set<string>();
 
   if (status === "ACTIVE") {
     for (const link of user.links) {
@@ -70,6 +71,11 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
         const configs = await adapter.getConfigs(link.remoteId, remoteExtra);
         const prefix = (link.server as any).remarkPrefix as string | null;
         configs.forEach((cfg, i) => {
+          // Multiple local 3x-ui server rows may represent different inbounds
+          // on one panel. Its links endpoint returns all links for the shared
+          // client each time, so deduplicate before applying local remarks.
+          if (seenConfigUris.has(cfg.uri)) return;
+          seenConfigUris.add(cfg.uri);
           if (prefix) {
             // Base remark is "{prefix}-{username}"; if a server hands back
             // more than one config (e.g. multiple clean IPs), a numeric

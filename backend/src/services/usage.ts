@@ -33,6 +33,7 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
 
   const perServer: AggregatedUsage["perServer"] = [];
   let totalUsed = 0;
+  const countedRemoteAccounts = new Set<string>();
 
   for (const link of user.links) {
     try {
@@ -45,7 +46,16 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
         data: { usedBytes: state.usedBytes, lastSyncedAt: new Date() },
       });
 
-      totalUsed += state.usedBytes;
+      // A modern 3x-ui client has one shared traffic row across every inbound.
+      // Two local server records pointing to the same panel/client must display
+      // that state on both rows without counting it twice toward the total.
+      const remoteAccountKey = link.server.panelType === "THREEXUI"
+        ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+        : `${link.server.id}:${link.remoteId}`;
+      if (!countedRemoteAccounts.has(remoteAccountKey)) {
+        totalUsed += state.usedBytes;
+        countedRemoteAccounts.add(remoteAccountKey);
+      }
       perServer.push({
         serverId: link.server.id,
         serverName: link.server.name,
@@ -61,7 +71,13 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
         serverId: link.server.id,
         serverName: link.server.name,
       });
-      totalUsed += link.usedBytes; // fall back to last cached value
+      const remoteAccountKey = link.server.panelType === "THREEXUI"
+        ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+        : `${link.server.id}:${link.remoteId}`;
+      if (!countedRemoteAccounts.has(remoteAccountKey)) {
+        totalUsed += link.usedBytes; // fall back to last cached value
+        countedRemoteAccounts.add(remoteAccountKey);
+      }
       perServer.push({
         serverId: link.server.id,
         serverName: link.server.name,

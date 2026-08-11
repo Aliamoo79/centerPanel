@@ -152,6 +152,34 @@ export class ThreeXUIAdapter implements PanelAdapter {
     if (useVision) client.flow = "xtls-rprx-vision";
 
     const c = await this.authedClient();
+
+    // Client email is unique across the entire 3x-ui panel, not per inbound.
+    // A second local "server" can therefore point at another inbound on the
+    // same panel. Reuse that panel-wide client and attach the new inbound
+    // instead of trying to create a duplicate client row.
+    let existing: any | null = null;
+    try {
+      const lookup = await c.get(`/panel/api/clients/get/${encodeURIComponent(params.username)}`);
+      if (lookup.data?.success && lookup.data?.obj?.client) existing = lookup.data.obj.client;
+    } catch (err: any) {
+      if (err?.response?.status !== 404) throw err;
+    }
+
+    if (existing) {
+      const attach = await c.post(`/panel/api/clients/${encodeURIComponent(params.username)}/attach`, {
+        inboundIds: [this.inboundId],
+      });
+      if (!attach.data || attach.data.success === false) {
+        throw new Error(attach.data?.msg ?? "اتصال کاربر موجود به اینباند 3x-ui ناموفق بود");
+      }
+      this.inboundCache = null;
+      const clientId = existing.uuid || existing.password || existing.auth;
+      return {
+        remoteId: params.username,
+        remoteExtra: { clientId, inboundId: this.inboundId, protocol, subId: existing.subId },
+      };
+    }
+
     const res = await c.post("/panel/api/clients/add", {
       client,
       inboundIds: [this.inboundId],
@@ -255,6 +283,31 @@ export class ThreeXUIAdapter implements PanelAdapter {
 
   async deleteUser(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<void> {
     const c = await this.authedClient();
+    const inboundId = Number(remoteExtra?.inboundId);
+    if (inboundId) {
+      try {
+        const detach = await c.post(`/panel/api/clients/${encodeURIComponent(remoteId)}/detach`, {
+          inboundIds: [inboundId],
+        });
+        if (!detach.data || detach.data.success === false) {
+          throw new Error(detach.data?.msg ?? "جداسازی کاربر از اینباند 3x-ui ناموفق بود");
+        }
+
+        // Remove the panel-wide row only when this was its final inbound.
+        // Otherwise another local server link still depends on the client.
+        const remaining = await c.get(`/panel/api/clients/get/${encodeURIComponent(remoteId)}`);
+        const inboundIds = remaining.data?.obj?.inboundIds;
+        if (remaining.data?.success && Array.isArray(inboundIds) && inboundIds.length === 0) {
+          await c.post(`/panel/api/clients/del/${encodeURIComponent(remoteId)}?keepTraffic=0`);
+        }
+        this.inboundCache = null;
+        return;
+      } catch (err: any) {
+        // Older clients APIs do not support detach; retain their historical
+        // delete behavior rather than making removal impossible.
+        if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
+      }
+    }
     await c.post(`/panel/api/clients/del/${encodeURIComponent(remoteId)}?keepTraffic=0`);
     this.inboundCache = null;
   }
