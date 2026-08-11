@@ -9,6 +9,9 @@ dist/
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
 *.db.bak
+backups/
+.deploy-config
+backend/.env.before-install.*
 
 # logs
 logs/

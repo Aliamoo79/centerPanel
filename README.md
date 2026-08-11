@@ -1,5 +1,23 @@
 # پلتفرم Subscription برای فروش VPN
 
+## Production installation (Ubuntu/Debian)
+
+Clone the repository into `/opt/centerpanel` or a normal user's home directory, then run:
+
+```bash
+sudo bash install.sh
+```
+
+The interactive installer asks for every required deployment value: public domain or IP, HTTPS and Let's Encrypt email, initial admin credentials, backend port, Git branch, usage refresh interval, and Linux service user. It installs Node.js 20, Nginx and optional Certbot, creates the environment file, initializes SQLite, builds both applications, and installs a systemd service. The internal JWT secret is generated securely.
+
+For every later update, run:
+
+```bash
+sudo bash deploy.sh
+```
+
+Redeploy pulls the saved branch, makes a timestamped SQLite backup in `backups/`, installs locked dependencies, applies migrations, rebuilds both applications, and restarts the service. Backups older than 30 days are removed automatically.
+
 یک سیستم مدیریت ری‌سلری برای چند سرور VPN (Marzban / 3x-ui / Hiddify) با:
 - داشبورد ادمین برای افزودن سرور، افزودن کاربر، مشاهده‌ی مصرف و زمان باقی‌مانده
 - برای هر کاربر یک **لینک subscription** که همه‌ی کانفیگ‌های او از همه‌ی سرورها را جمع می‌کند و در برنامه‌های v2rayNG / NekoBox / Hiddify App / Streisand و غیره باز می‌شود
