@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, Button, Input, EmptyState, Modal, Select } from "../components/ui";
@@ -15,6 +15,47 @@ export default function Users() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [serverFilter, setServerFilter] = useState("ALL");
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importInput = useRef<HTMLInputElement>(null);
+
+  async function exportBackup() {
+    setExporting(true);
+    try {
+      const backup = await api.exportBackup();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `vpn-center-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      toast.success("نسخه پشتیبان دانلود شد");
+    } catch (err: any) {
+      toast.error(err.message ?? "دریافت نسخه پشتیبان ناموفق بود");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function importBackup(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!confirm("همه کاربران و سرورهای فعلی با اطلاعات این فایل جایگزین شوند؟ این کار قابل بازگشت نیست.")) return;
+    setImporting(true);
+    try {
+      const backup = JSON.parse(await file.text());
+      const result = await api.importBackup(backup);
+      await Promise.all([api.listUsers().then(setUsers), api.listServers().then(setServers)]);
+      toast.success(`${result.users} کاربر و ${result.servers} سرور بازیابی شد`);
+    } catch (err: any) {
+      const message = err instanceof SyntaxError ? "فایل انتخاب‌شده JSON معتبر نیست" : err.message;
+      toast.error(message ?? "بازیابی نسخه پشتیبان ناموفق بود");
+    } finally {
+      setImporting(false);
+    }
+  }
 
   function reload(showError = true) {
     api.listUsers().then(setUsers).catch((err) => {
@@ -61,9 +102,18 @@ export default function Users() {
           <h1 className="text-xl font-semibold">کاربران</h1>
           <p className="text-muted text-sm mt-1">مشترکین سرویس و لینک‌های subscription</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="w-full sm:w-auto">
-          + افزودن کاربر
-        </Button>
+        <div className="grid grid-cols-2 sm:flex gap-2">
+          <input ref={importInput} type="file" accept="application/json,.json" onChange={importBackup} className="hidden" />
+          <Button variant="ghost" onClick={exportBackup} disabled={exporting || importing}>
+            {exporting ? "در حال دریافت..." : "خروجی پشتیبان"}
+          </Button>
+          <Button variant="ghost" onClick={() => importInput.current?.click()} disabled={importing || exporting}>
+            {importing ? "در حال بازیابی..." : "ورودی پشتیبان"}
+          </Button>
+          <Button onClick={() => setShowForm(true)} className="col-span-2 sm:col-span-1">
+            + افزودن کاربر
+          </Button>
+        </div>
       </div>
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title="افزودن کاربر جدید">

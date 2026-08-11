@@ -93,14 +93,27 @@ usersRouter.post(
     });
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // Quota enforcement marks the user EXPIRED and disables every linked
+    // config. A counter reset starts a new usage cycle, so undo that state
+    // unless the user's real calendar expiry has also passed.
+    const reactivateAfterReset =
+      user.status === "EXPIRED" && (!user.expireAt || user.expireAt.getTime() > Date.now());
+
     const results = await Promise.allSettled(
       user.links.map(async (link: any) => {
         const adapter = getAdapter(link.server.panelType as any, link.server);
         const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
         await adapter.resetUsage(link.remoteId, remoteExtra);
+        if (reactivateAfterReset) {
+          await adapter.setEnabled(link.remoteId, true, remoteExtra);
+        }
         await prisma.userServerLink.update({
           where: { id: link.id },
-          data: { usedBytes: 0, lastSyncedAt: new Date() },
+          data: {
+            usedBytes: 0,
+            lastSyncedAt: new Date(),
+            ...(reactivateAfterReset ? { enabled: true } : {}),
+          },
         });
         return link.server.name;
       })
@@ -112,6 +125,10 @@ usersRouter.post(
         : null)
       .filter(Boolean) as { server: string; error: string }[];
     const resetCount = results.length - failed.length;
+
+    if (reactivateAfterReset && resetCount > 0) {
+      await prisma.user.update({ where: { id: user.id }, data: { status: "ACTIVE" } });
+    }
 
     const context = { userId: user.id, resetCount, failed, admin: req.admin?.username };
     if (failed.length > 0) {

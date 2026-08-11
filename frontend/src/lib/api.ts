@@ -82,6 +82,13 @@ export const api = {
   toggleUserServer: (id: string, serverId: string, enabled: boolean) =>
     request<any>(`/users/${id}/servers/${serverId}`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
 
+  exportBackup: () => request<any>("/backup/export"),
+  importBackup: (backup: any) =>
+    request<{ servers: number; users: number; links: number }>("/backup/import", {
+      method: "POST",
+      body: JSON.stringify(backup),
+    }),
+
   listLogs: (params?: { level?: string; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params?.level) qs.set("level", params.level);
