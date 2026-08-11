@@ -148,6 +148,12 @@ export class X4GAdapter implements PanelAdapter {
     );
   }
 
+  async resetUsage(remoteId: string): Promise<void> {
+    await this.authed((headers) =>
+      this.client.patch(`/api/links/${encodeURIComponent(remoteId)}`, { used_bytes: 0 }, { headers })
+    );
+  }
+
   async deleteUser(remoteId: string): Promise<void> {
     await this.authed((headers) => this.client.delete(`/api/links/${encodeURIComponent(remoteId)}`, { headers }));
   }

@@ -13,6 +13,7 @@ export default function UserDetail() {
   const [servers, setServers] = useState<any[] | null>(null);
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [resettingUsage, setResettingUsage] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   function reload() {
@@ -76,6 +77,24 @@ export default function UserDetail() {
       navigate("/users");
     } catch (err: any) {
       toast.error(err.message ?? "حذف کاربر ناموفق بود");
+    }
+  }
+
+  async function resetUsage() {
+    if (!confirm(`مصرف «${user.displayName}» روی همه سرورها صفر شود؟ این کار قابل بازگشت نیست.`)) return;
+    setResettingUsage(true);
+    try {
+      const result = await api.resetUserUsage(user.id);
+      reload();
+      if (result.failed.length > 0) {
+        toast.error(`مصرف روی ${result.resetCount} سرور صفر شد؛ ناموفق: ${result.failed.map((f) => f.server).join("، ")}`);
+      } else {
+        toast.success(`مصرف روی همه ${result.resetCount} سرور صفر شد`);
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "صفر کردن مصرف ناموفق بود");
+    } finally {
+      setResettingUsage(false);
     }
   }
 
@@ -161,7 +180,17 @@ export default function UserDetail() {
       </Card>
 
       <Card className="p-4 sm:p-5">
-        <p className="text-xs text-muted mb-3">مصرف کل (همه‌ی سرورها)</p>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-xs text-muted">مصرف کل (همه‌ی سرورها)</p>
+          <Button
+            variant="ghost"
+            onClick={resetUsage}
+            disabled={resettingUsage || user.links.length === 0}
+            className="shrink-0 border-warn/40 text-warn hover:bg-warn/10"
+          >
+            {resettingUsage ? "در حال صفر کردن..." : "صفر کردن مصرف"}
+          </Button>
+        </div>
         <SignalGauge
           used={usage?.usedBytes ?? 0}
           total={totalBytes}

@@ -84,6 +84,45 @@ usersRouter.get(
   })
 );
 
+usersRouter.post(
+  "/:id/usage/reset",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      include: { links: { include: { server: true } } },
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const results = await Promise.allSettled(
+      user.links.map(async (link: any) => {
+        const adapter = getAdapter(link.server.panelType as any, link.server);
+        const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+        await adapter.resetUsage(link.remoteId, remoteExtra);
+        await prisma.userServerLink.update({
+          where: { id: link.id },
+          data: { usedBytes: 0, lastSyncedAt: new Date() },
+        });
+        return link.server.name;
+      })
+    );
+
+    const failed = results
+      .map((result, index) => result.status === "rejected"
+        ? { server: user.links[index].server.name, error: describePanelError(result.reason) }
+        : null)
+      .filter(Boolean) as { server: string; error: string }[];
+    const resetCount = results.length - failed.length;
+
+    const context = { userId: user.id, resetCount, failed, admin: req.admin?.username };
+    if (failed.length > 0) {
+      logger.warn("user_usage_reset_partial_failure", `Usage reset for '${user.username}' failed on some servers`, context);
+    } else {
+      logger.info("user_usage_reset", `Usage for '${user.username}' was reset on all servers`, context);
+    }
+    res.json({ resetCount, failed });
+  })
+);
+
 // Creates the platform user AND provisions a real account on every
 // selected server, in parallel. If one server fails to provision, the
 // user is still created with whichever servers succeeded, and the

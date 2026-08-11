@@ -281,6 +281,26 @@ export class ThreeXUIAdapter implements PanelAdapter {
     await this.mergeAndPush(remoteId, { enable: enabled });
   }
 
+  async resetUsage(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<void> {
+    const c = await this.authedClient();
+    try {
+      const res = await c.post(`/panel/api/clients/resetTraffic/${encodeURIComponent(remoteId)}`);
+      if (!res.data || res.data.success === false) throw new Error(res.data?.msg ?? "Resetting 3x-ui traffic failed");
+      return;
+    } catch (err: any) {
+      // Before the panel-wide clients API, reset was scoped to an inbound.
+      if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
+    }
+
+    const inboundId = Number(remoteExtra?.inboundId) || this.inboundId;
+    const res = await c.post(
+      `/panel/api/inbounds/${inboundId}/resetClientTraffic/${encodeURIComponent(remoteId)}`
+    );
+    if (!res.data || res.data.success === false) {
+      throw new Error(res.data?.msg ?? "Resetting 3x-ui traffic failed");
+    }
+  }
+
   async deleteUser(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<void> {
     const c = await this.authedClient();
     const inboundId = Number(remoteExtra?.inboundId);

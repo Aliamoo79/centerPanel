@@ -171,6 +171,12 @@ export class NahanAdapter implements PanelAdapter {
     await this.saveUsers(users);
   }
 
+  async resetUsage(_remoteId: string): Promise<void> {
+    // Nahan exposes its counters as a read-only sysUsage snapshot and has
+    // no per-profile reset operation in its admin API.
+    throw new Error("This Nahan server does not support resetting usage per user");
+  }
+
   async deleteUser(remoteId: string): Promise<void> {
     const { config } = await this.fetchState();
     const users: any[] = (config.users ?? []).filter((x: any) => x.id !== remoteId);

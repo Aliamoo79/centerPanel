@@ -87,6 +87,10 @@ export class HiddifyAdapter implements PanelAdapter {
     await this.client.patch(`/api/v2/admin/user/${remoteId}/`, { enable: enabled });
   }
 
+  async resetUsage(remoteId: string): Promise<void> {
+    await this.client.patch(`/api/v2/admin/user/${remoteId}/`, { current_usage_GB: 0 });
+  }
+
   async deleteUser(remoteId: string): Promise<void> {
     await this.client.delete(`/api/v2/admin/user/${remoteId}/`);
   }

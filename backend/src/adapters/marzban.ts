@@ -105,6 +105,11 @@ export class MarzbanAdapter implements PanelAdapter {
     await c.put(`/api/user/${encodeURIComponent(remoteId)}`, { status: enabled ? "active" : "disabled" });
   }
 
+  async resetUsage(remoteId: string): Promise<void> {
+    const c = await this.authedClient();
+    await c.post(`/api/user/${encodeURIComponent(remoteId)}/reset`);
+  }
+
   async deleteUser(remoteId: string): Promise<void> {
     const c = await this.authedClient();
     await c.delete(`/api/user/${encodeURIComponent(remoteId)}`);

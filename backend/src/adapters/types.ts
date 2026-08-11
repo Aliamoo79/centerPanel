@@ -61,6 +61,9 @@ export interface PanelAdapter {
   /** Enable/disable an account without deleting it */
   setEnabled(remoteId: string, enabled: boolean, remoteExtra?: Record<string, unknown> | null): Promise<void>;
 
+  /** Reset the panel's traffic counters for an existing account */
+  resetUsage(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<void>;
+
   /** Permanently remove the account from the panel */
   deleteUser(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<void>;
 

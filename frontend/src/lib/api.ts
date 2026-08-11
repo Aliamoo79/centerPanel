@@ -74,6 +74,8 @@ export const api = {
   getUser: (id: string) => request<any>(`/users/${id}`),
   createUser: (data: any) => request<any>("/users", { method: "POST", body: JSON.stringify(data) }),
   updateUser: (id: string, data: any) => request<any>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  resetUserUsage: (id: string) =>
+    request<{ resetCount: number; failed: { server: string; error: string }[] }>(`/users/${id}/usage/reset`, { method: "POST" }),
   deleteUser: (id: string) => request<void>(`/users/${id}`, { method: "DELETE" }),
   addUserServer: (id: string, serverId: string) => request<any>(`/users/${id}/servers/${serverId}`, { method: "POST" }),
   removeUserServer: (id: string, serverId: string) => request<void>(`/users/${id}/servers/${serverId}`, { method: "DELETE" }),
