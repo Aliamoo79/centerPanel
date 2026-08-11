@@ -18,6 +18,14 @@ sudo bash deploy.sh
 
 Redeploy pulls the saved branch, makes a timestamped SQLite backup in `backups/`, installs locked dependencies, applies migrations, rebuilds both applications, and restarts the service. Backups older than 30 days are removed automatically.
 
+To change the installed domain and issue a new HTTPS certificate, first point the new domain's DNS record to the server and run:
+
+```bash
+sudo ./change-domain.sh
+```
+
+The script asks for the new domain and Let's Encrypt email, updates `PUBLIC_BASE_URL`, safely replaces the Nginx site, requests the certificate, and restarts CenterPanel.
+
 یک سیستم مدیریت ری‌سلری برای چند سرور VPN (Marzban / 3x-ui / Hiddify) با:
 - داشبورد ادمین برای افزودن سرور، افزودن کاربر، مشاهده‌ی مصرف و زمان باقی‌مانده
 - برای هر کاربر یک **لینک subscription** که همه‌ی کانفیگ‌های او از همه‌ی سرورها را جمع می‌کند و در برنامه‌های v2rayNG / NekoBox / Hiddify App / Streisand و غیره باز می‌شود
