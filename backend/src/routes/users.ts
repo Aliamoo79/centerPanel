@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import { requireAdmin, AuthedRequest } from "../middleware/auth";
 import { getAdapter } from "../adapters";
-import { syncAllUserUsage, syncUserUsage } from "../services/usage";
+import { beginUserUsageSync, getUserUsageSyncProgress, syncAllUserUsage, syncUserUsage } from "../services/usage";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
@@ -47,6 +47,34 @@ function findPublicUsers() {
   });
 }
 
+function cachedUserUsage(user: any) {
+  let usedBytes = 0;
+  const countedRemoteAccounts = new Set<string>();
+  for (const link of user.links) {
+    const key = link.server.panelType === "THREEXUI"
+      ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+      : `${link.serverId}:${link.remoteId}`;
+    if (!countedRemoteAccounts.has(key)) {
+      usedBytes += link.usedBytes;
+      countedRemoteAccounts.add(key);
+    }
+  }
+  return {
+    usedBytes,
+    dataLimitBytes: user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null,
+    expireAt: user.expireAt,
+    perServer: user.links.map((link: any) => ({
+      serverId: link.serverId,
+      serverName: link.server.name,
+      usedBytes: link.usedBytes,
+      dataLimitBytes: null,
+      expireAt: null,
+      enabled: link.enabled,
+      lastSyncedAt: link.lastSyncedAt,
+    })),
+  };
+}
+
 usersRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
@@ -78,9 +106,28 @@ usersRouter.get(
     });
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
-    const usage = await syncUserUsage(user.id);
+    const usage = cachedUserUsage(user);
     const quotaExceeded = usage.dataLimitBytes !== null && usage.usedBytes >= usage.dataLimitBytes;
-    res.json({ ...toPublicUser(user), ...(quotaExceeded ? { status: "EXPIRED" } : {}), usage });
+    res.json({
+      ...toPublicUser(user),
+      ...(quotaExceeded ? { status: "EXPIRED" } : {}),
+      usage,
+      usageRefresh: getUserUsageSyncProgress(user.id),
+    });
+  })
+);
+
+usersRouter.post(
+  "/:id/usage/refresh",
+  asyncHandler(async (req, res) => {
+    const links = await prisma.userServerLink.findMany({ where: { userId: req.params.id }, select: { serverId: true } });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
+    const progress = beginUserUsageSync(user.id, links.map((link) => link.serverId));
+    void syncUserUsage(user.id).catch((err) => {
+      logger.error("user_usage_refresh_failed", describePanelError(err), { userId: user.id });
+    });
+    res.status(202).json(progress);
   })
 );
 

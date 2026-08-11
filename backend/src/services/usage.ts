@@ -18,6 +18,31 @@ export interface AggregatedUsage {
   }[];
 }
 
+export interface UsageSyncProgress {
+  running: boolean;
+  startedAt: string;
+  servers: Record<string, { status: "pending" | "success" | "error"; error?: string }>;
+}
+
+const userSyncProgress = new Map<string, UsageSyncProgress>();
+const activeUserSyncs = new Map<string, Promise<AggregatedUsage>>();
+
+export function beginUserUsageSync(userId: string, serverIds: string[]): UsageSyncProgress {
+  const current = userSyncProgress.get(userId);
+  if (current?.running) return current;
+  const progress: UsageSyncProgress = {
+    running: true,
+    startedAt: new Date().toISOString(),
+    servers: Object.fromEntries(serverIds.map((serverId) => [serverId, { status: "pending" as const }])),
+  };
+  userSyncProgress.set(userId, progress);
+  return progress;
+}
+
+export function getUserUsageSyncProgress(userId: string): UsageSyncProgress | null {
+  return userSyncProgress.get(userId) ?? null;
+}
+
 /**
  * Pull live usage from every server a user is provisioned on, update the
  * cached snapshot in UserServerLink, and return an aggregated view.
@@ -25,17 +50,20 @@ export interface AggregatedUsage {
  * temporarily down just gets flagged with `error` and its last-known
  * cached usedBytes is used instead.
  */
-export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
+async function performUserUsageSync(userId: string): Promise<AggregatedUsage> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
     include: { links: { include: { server: true } } },
   });
+  const progress = userSyncProgress.get(userId)?.running
+    ? userSyncProgress.get(userId)!
+    : beginUserUsageSync(userId, user.links.map((link) => link.serverId));
 
   const perServer: AggregatedUsage["perServer"] = [];
   let totalUsed = 0;
   const countedRemoteAccounts = new Set<string>();
 
-  for (const link of user.links) {
+  await Promise.all(user.links.map(async (link) => {
     try {
       const adapter = getAdapter(link.server.panelType as any, link.server);
       const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
@@ -45,6 +73,7 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
         where: { id: link.id },
         data: { usedBytes: state.usedBytes, lastSyncedAt: new Date() },
       });
+      progress.servers[link.serverId] = { status: "success" };
 
       // A modern 3x-ui client has one shared traffic row across every inbound.
       // Two local server records pointing to the same panel/client must display
@@ -66,6 +95,7 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
       });
     } catch (err: any) {
       const message = describePanelError(err);
+      progress.servers[link.serverId] = { status: "error", error: message };
       logger.warn("usage_sync_failed", `دریافت مصرف «${user.username}» از سرور «${link.server.name}» ناموفق بود: ${message}`, {
         userId: user.id,
         serverId: link.server.id,
@@ -88,7 +118,7 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
         error: message,
       });
     }
-  }
+  }));
 
   const dataLimitBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
 
@@ -123,12 +153,25 @@ export async function syncUserUsage(userId: string): Promise<AggregatedUsage> {
     }
   }
 
+  progress.running = false;
   return {
     usedBytes: totalUsed,
     dataLimitBytes,
     expireAt: user.expireAt,
     perServer,
   };
+}
+
+export function syncUserUsage(userId: string): Promise<AggregatedUsage> {
+  const active = activeUserSyncs.get(userId);
+  if (active) return active;
+  const run = performUserUsageSync(userId).finally(() => {
+    const progress = userSyncProgress.get(userId);
+    if (progress) progress.running = false;
+    activeUserSyncs.delete(userId);
+  });
+  activeUserSyncs.set(userId, run);
+  return run;
 }
 
 let allUsersSync: Promise<void> | null = null;

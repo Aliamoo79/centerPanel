@@ -27,8 +27,40 @@ export default function UserDetail() {
       .catch((err) => setLoadError(err.message ?? "خطا در دریافت اطلاعات کاربر"));
   }
   useEffect(() => {
-    reload();
+    let cancelled = false;
+    let hasLoaded = false;
+    let timer: number | undefined;
+    async function loadProgressively() {
+      if (!id) return;
+      try {
+        const initial = await api.getUser(id);
+        if (cancelled) return;
+        setUser(initial);
+        hasLoaded = true;
+        setLoadError(null);
+        const progress = await api.refreshSingleUserUsage(id);
+        if (cancelled) return;
+        setUser((current: any) => current ? { ...current, usageRefresh: progress } : current);
+
+        while (!cancelled) {
+          await new Promise<void>((resolve) => { timer = window.setTimeout(resolve, 700); });
+          if (cancelled) return;
+          const next = await api.getUser(id);
+          if (cancelled) return;
+          setUser(next);
+          if (next.usageRefresh && !next.usageRefresh.running) break;
+        }
+      } catch (err: any) {
+        if (!cancelled && !hasLoaded) setLoadError(err.message ?? "خطا در دریافت اطلاعات کاربر");
+        else if (!cancelled) toast.error(err.message ?? "به‌روزرسانی مصرف متوقف شد");
+      }
+    }
+    loadProgressively();
     api.listServers().then(setServers).catch((err) => toast.error(err.message ?? "خطا در دریافت سرورها"));
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -228,14 +260,24 @@ export default function UserDetail() {
         </div>
 
         <div className="space-y-2">
-          {usage?.perServer?.map((ps: any) => (
-            <Card key={ps.serverId} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {usage?.perServer?.map((ps: any) => {
+            const refreshState = user.usageRefresh?.servers?.[ps.serverId];
+            if (refreshState?.status === "pending") {
+              return (
+                <Card key={ps.serverId} className="p-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1"><Skeleton className="h-2.5 w-2.5 rounded-full" /><div className="space-y-2 flex-1"><p className="text-sm font-medium">{ps.serverName}</p><Skeleton className="h-3 w-24" /></div></div>
+                  <div className="flex gap-2"><Skeleton className="h-10 w-24" /><Skeleton className="h-10 w-20" /></div>
+                </Card>
+              );
+            }
+            const rowError = refreshState?.status === "error" ? refreshState.error : ps.error;
+            return <Card key={ps.serverId} className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <StatusDot ok={!ps.error && ps.enabled} />
+                <StatusDot ok={!rowError && ps.enabled} />
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{ps.serverName}</p>
                   <p className="text-xs text-muted font-nums mt-0.5 truncate">
-                    {ps.error ? `خطا: ${ps.error}` : formatBytes(ps.usedBytes)}
+                    {rowError ? `خطا: ${rowError}` : formatBytes(ps.usedBytes)}
                   </p>
                 </div>
               </div>
@@ -251,8 +293,8 @@ export default function UserDetail() {
                   جدا کردن
                 </Button>
               </div>
-            </Card>
-          ))}
+            </Card>;
+          })}
         </div>
       </div>
     </div>

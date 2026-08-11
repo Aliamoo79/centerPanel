@@ -71,6 +71,7 @@ export const api = {
 
   listUsers: () => request<any[]>("/users"),
   refreshUserUsage: () => request<{ started: boolean }>("/users/usage/refresh", { method: "POST" }),
+  refreshSingleUserUsage: (id: string) => request<any>(`/users/${id}/usage/refresh`, { method: "POST" }),
   getUser: (id: string) => request<any>(`/users/${id}`),
   createUser: (data: any) => request<any>("/users", { method: "POST", body: JSON.stringify(data) }),
   updateUser: (id: string, data: any) => request<any>(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
