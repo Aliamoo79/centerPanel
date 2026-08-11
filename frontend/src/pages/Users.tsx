@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { Card, Button, Input, EmptyState, Modal, Select } from "../components/ui";
+import { Card, Button, Input, EmptyState, Modal, Select, Skeleton } from "../components/ui";
 import { formatBytes, formatDate } from "../lib/format";
 import { useToast } from "../lib/toast";
 
@@ -156,7 +156,17 @@ export default function Users() {
                 <th dir="rtl" className="text-right px-2 py-3">انقضا</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody aria-busy={users === null}>
+              {users === null && Array.from({ length: 8 }).map((_, index) => (
+                <tr key={index} className="border-b border-line/50 last:border-0">
+                  <td className="px-2 py-4"><Skeleton className="h-4 w-28" /><Skeleton className="h-3 w-20 mt-2" /></td>
+                  <td className="px-2 py-4"><Skeleton className="h-6 w-14 rounded-full" /></td>
+                  <td className="px-2 py-4"><Skeleton className="h-4 w-32" /></td>
+                  <td className="px-2 py-4"><Skeleton className="h-4 w-8" /></td>
+                  <td className="px-2 py-4"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-2 py-4"><Skeleton className="h-4 w-24" /></td>
+                </tr>
+              ))}
               {visibleUsers.map((user) => {
                 const used = user.links?.reduce((sum: number, link: any) => sum + (link.usedBytes ?? 0), 0) ?? 0;
                 const total = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { Card, Button, Input, Select, StatusDot, SignalGauge, Modal } from "../components/ui";
+import { Card, Button, Input, Select, StatusDot, SignalGauge, Modal, Skeleton, LoadingRegion } from "../components/ui";
 import { formatBytes, formatDate, panelLabel } from "../lib/format";
 import { useToast } from "../lib/toast";
 
@@ -40,7 +40,7 @@ export default function UserDetail() {
       </div>
     );
   }
-  if (!user) return <p className="text-muted text-sm">در حال بارگذاری...</p>;
+  if (!user) return <UserDetailSkeleton />;
 
   const usage = user.usage;
   const totalBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
@@ -256,6 +256,22 @@ export default function UserDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+function UserDetailSkeleton() {
+  return (
+    <LoadingRegion label="در حال دریافت اطلاعات کاربر">
+      <div className="space-y-6">
+        <div className="flex items-end justify-between gap-4">
+          <div className="space-y-3"><Skeleton className="h-3 w-32" /><Skeleton className="h-7 w-48" /><Skeleton className="h-4 w-64" /></div>
+          <div className="flex gap-2"><Skeleton className="h-10 w-20" /><Skeleton className="h-10 w-28" /></div>
+        </div>
+        <Card className="p-4 sm:p-5"><Skeleton className="h-3 w-52 mb-3" /><div className="flex gap-2"><Skeleton className="h-11 flex-1" /><Skeleton className="h-11 w-24" /></div></Card>
+        <Card className="p-4 sm:p-5"><div className="flex justify-between mb-5"><Skeleton className="h-3 w-40" /><Skeleton className="h-10 w-28" /></div><Skeleton className="h-2.5 w-full mb-3" /><div className="flex justify-between"><Skeleton className="h-3 w-20" /><Skeleton className="h-3 w-24" /></div></Card>
+        <div className="space-y-3"><Skeleton className="h-4 w-28" />{Array.from({ length: 3 }).map((_, index) => <Card key={index} className="p-4 flex justify-between"><div className="flex gap-3 flex-1"><Skeleton className="h-2.5 w-2.5 rounded-full" /><div className="space-y-2 flex-1"><Skeleton className="h-4 w-28" /><Skeleton className="h-3 w-16" /></div></div><div className="flex gap-2"><Skeleton className="h-10 w-24" /><Skeleton className="h-10 w-20" /></div></Card>)}</div>
+      </div>
+    </LoadingRegion>
   );
 }
 

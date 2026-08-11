@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { api } from "../lib/api";
-import { Card, Button, Select } from "../components/ui";
+import { Card, Button, Select, Skeleton, LoadingRegion } from "../components/ui";
 import { useToast } from "../lib/toast";
 
 interface LogEntry {
@@ -73,7 +73,14 @@ export default function Logs() {
 
       <Card className="divide-y divide-line overflow-hidden">
         {loading ? (
-          <p className="text-center text-muted py-12 text-sm">در حال بارگذاری...</p>
+          <LoadingRegion label="در حال دریافت لاگ‌ها">
+            {Array.from({ length: 9 }).map((_, index) => (
+              <div key={index} className="px-4 py-3 flex items-start gap-3 border-b border-line last:border-0">
+                <Skeleton className="h-6 w-12 shrink-0" />
+                <div className="space-y-2 flex-1"><Skeleton className={`h-4 ${index % 3 === 0 ? "w-3/5" : "w-4/5"}`} /><Skeleton className="h-3 w-40" /></div>
+              </div>
+            ))}
+          </LoadingRegion>
         ) : entries.length === 0 ? (
           <p className="text-center text-muted py-12 text-sm">لاگی برای نمایش وجود ندارد</p>
         ) : (

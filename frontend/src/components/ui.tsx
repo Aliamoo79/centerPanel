@@ -6,6 +6,19 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
   );
 }
 
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <span aria-hidden="true" className={`skeleton block rounded-md ${className}`} />;
+}
+
+export function LoadingRegion({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <div role="status" aria-live="polite" aria-label={label} aria-busy="true" className={className}>
+      {children}
+      <span className="sr-only">{label}</span>
+    </div>
+  );
+}
+
 export function StatusDot({ ok, pulse = false }: { ok: boolean; pulse?: boolean }) {
   return (
     <span className="relative inline-flex h-2.5 w-2.5">

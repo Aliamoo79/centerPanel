@@ -80,15 +80,16 @@ PUBLIC_BASE_URL="$SCHEME://$HOST_NAME"
 
 echo
 echo "Installing system packages..."
-apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl git nginx openssl
+echo "Waiting up to 5 minutes if another system update currently holds the APT lock..."
+apt-get -o DPkg::Lock::Timeout=300 update
+DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y ca-certificates curl git nginx openssl
 JWT_SECRET="$(openssl rand -hex 48)"
 
 NODE_MAJOR="$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)"
 if (( NODE_MAJOR < 20 )); then
   echo "Installing Node.js 20 LTS..."
   curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+  DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y nodejs
 fi
 
 if [[ -f "$ROOT_DIR/backend/.env" ]]; then
@@ -190,7 +191,7 @@ done
 
 if [[ "$ENABLE_HTTPS" == "y" || "$ENABLE_HTTPS" == "yes" ]]; then
   echo "Requesting the TLS certificate..."
-  DEBIAN_FRONTEND=noninteractive apt-get install -y certbot python3-certbot-nginx
+  DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=300 install -y certbot python3-certbot-nginx
   certbot --nginx --non-interactive --agree-tos --redirect -m "$LETSENCRYPT_EMAIL" -d "$HOST_NAME"
 fi
 

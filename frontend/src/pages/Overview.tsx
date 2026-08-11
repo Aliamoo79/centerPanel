@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { Card, StatusDot } from "../components/ui";
+import { Card, StatusDot, Skeleton, LoadingRegion } from "../components/ui";
 import { formatBytes, daysLeft, panelLabel } from "../lib/format";
 import { useToast } from "../lib/toast";
 
@@ -45,15 +45,15 @@ export default function Overview() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-5">
           <p className="text-muted text-xs mb-2">تعداد سرورها</p>
-          <p className="text-2xl font-nums font-semibold">{servers?.length ?? "—"}</p>
+          {servers === null ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-nums font-semibold">{servers.length}</p>}
         </Card>
         <Card className="p-5">
           <p className="text-muted text-xs mb-2">تعداد کاربران</p>
-          <p className="text-2xl font-nums font-semibold">{users?.length ?? "—"}</p>
+          {users === null ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-nums font-semibold">{users.length}</p>}
         </Card>
         <Card className="p-5">
           <p className="text-muted text-xs mb-2">مجموع مصرف</p>
-          <p className="text-2xl font-nums font-semibold">{formatBytes(totalUsage)}</p>
+          {users === null ? <Skeleton className="h-8 w-28" /> : <p className="text-2xl font-nums font-semibold">{formatBytes(totalUsage)}</p>}
         </Card>
       </div>
 
@@ -90,6 +90,18 @@ export default function Overview() {
       <div>
         <h2 className="text-sm font-medium text-muted mb-3">سرورها</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {servers === null && (
+            <LoadingRegion label="در حال دریافت سرورها" className="contents">
+              <div className="contents">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <Card key={index} className="p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1"><Skeleton className="h-2.5 w-2.5 rounded-full" /><div className="space-y-2 flex-1"><Skeleton className="h-4 w-28" /><Skeleton className="h-3 w-16" /></div></div>
+                    <Skeleton className="h-3 w-14" />
+                  </Card>
+                ))}
+              </div>
+            </LoadingRegion>
+          )}
           {servers?.map((s) => (
             <Card key={s.id} className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">

@@ -25,6 +25,25 @@ html, body {
 ::-webkit-scrollbar-track { background: #0B0E14; }
 ::-webkit-scrollbar-thumb { background: #232A3A; border-radius: 8px; }
 
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #1a202d;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-110%);
+  background: linear-gradient(90deg, transparent, rgba(76, 224, 179, 0.09), transparent);
+  animation: skeleton-signal 1.35s ease-in-out infinite;
+}
+@keyframes skeleton-signal { to { transform: translateX(110%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: none; }
+}
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
