@@ -68,14 +68,16 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
 .imports{border-top:1px solid #334155;margin-top:20px;padding-top:18px}
 .imports-title{color:#f1f5f9;font-size:14px;font-weight:700;margin:0 0 5px}
 .imports-help{color:#94a3b8;font-size:12.5px;line-height:1.7;margin:0 0 12px}
-.import-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.import-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .import-btn{align-items:center;border:1px solid #475569;border-radius:11px;color:#f8fafc;display:flex;font-size:13px;font-weight:700;justify-content:center;min-height:46px;padding:10px 12px;text-decoration:none;transition:background-color .15s,border-color .15s,transform .15s}
+button.import-btn{background:#1e293b;cursor:pointer;font-family:inherit;width:100%}
 .import-btn:hover{background:#334155;border-color:#64748b}
 .import-btn:active{transform:translateY(1px)}
 .import-btn:focus-visible{outline:3px solid rgba(56,189,248,.35);outline-offset:2px}
 .import-btn-primary{background:#2563eb;border-color:#3b82f6}
 .import-btn-primary:hover{background:#1d4ed8;border-color:#60a5fa}
-@media(max-width:360px){.import-actions{grid-template-columns:1fr}}
+.import-status{color:#38bdf8;font-size:12px;line-height:1.7;margin:10px 0 0;min-height:20px}
+@media(max-width:520px){.import-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.import-btn{transition:none}}
 </style></head>
 <body>
@@ -101,7 +103,9 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
   <div class="import-actions">
     <a class="import-btn import-btn-primary" id="import-v2box" href="#">افزودن به V2Box</a>
     <a class="import-btn" id="import-v2rayng" href="#">افزودن به v2rayNG</a>
+    <button class="import-btn" id="import-v2rayn" type="button">کپی برای v2rayN</button>
   </div>
+  <p class="import-status" id="import-status" aria-live="polite"></p>
 </section>
 </div>
 <script>
@@ -112,6 +116,22 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
       "v2box://install-sub?url=" + encodeURIComponent(subscriptionUrl) + "&name=" + encodeURIComponent(subscriptionName);
     document.getElementById("import-v2rayng").href =
       "v2rayng://install-sub/?url=" + encodeURIComponent(subscriptionUrl + "#" + subscriptionName);
+    document.getElementById("import-v2rayn").addEventListener("click", async () => {
+      const status = document.getElementById("import-status");
+      try {
+        await navigator.clipboard.writeText(subscriptionUrl);
+      } catch {
+        const input = document.createElement("textarea");
+        input.value = subscriptionUrl;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        input.remove();
+      }
+      status.textContent = "لینک کپی شد؛ در v2rayN وارد Subscription group settings شوید، لینک را اضافه و Update subscription را انتخاب کنید.";
+    });
   })();
 </script>
 </body></html>`;
