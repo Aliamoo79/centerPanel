@@ -5,9 +5,7 @@ import { panelLabel } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 const PANEL_TYPES = [
-  { value: "MARZBAN", label: "Marzban / Marzneshin" },
   { value: "THREEXUI", label: "3x-ui" },
-  { value: "HIDDIFY", label: "Hiddify Manager" },
   { value: "X4G", label: "X4G" },
   { value: "NAHAN", label: "Nahan (Cloudflare Worker)" },
 ];
@@ -142,7 +140,7 @@ export default function Servers() {
 
 function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClose: () => void; onSaved: () => void }) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [panelType, setPanelType] = useState(initial?.panelType ?? "MARZBAN");
+  const [panelType, setPanelType] = useState(initial?.panelType ?? "THREEXUI");
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [remarkPrefix, setRemarkPrefix] = useState(initial?.remarkPrefix ?? "");
   const [username, setUsername] = useState(initial?.username ?? "");
@@ -266,13 +264,13 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
           <>
             <div>
               <label className="block text-xs text-muted mb-1.5">
-                {panelType === "HIDDIFY" ? "نام کاربری (استفاده نمی‌شود)" : "نام کاربری پنل"}
+                نام کاربری پنل
               </label>
               <Input value={username} onChange={(e) => setUsername(e.target.value)} required={!useToken} dir="ltr" />
             </div>
             <div>
               <label className="block text-xs text-muted mb-1.5">
-                {panelType === "HIDDIFY" ? "کلید API ادمین" : "رمز عبور پنل"}
+                رمز عبور پنل
                 {initial && <span className="text-muted"> {initial.hasPassword ? "(ذخیره شده؛ برای تغییر پر کن)" : "(ثبت نشده)"}</span>}
               </label>
               <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />

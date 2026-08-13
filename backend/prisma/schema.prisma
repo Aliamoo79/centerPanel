@@ -18,7 +18,7 @@ datasource db {
 // `provider` to "postgresql" or "mysql" later, you can convert these back
 // to real `enum` types if you want DB-level enforcement too.
 //
-// PanelType values: "MARZBAN" | "THREEXUI" | "HIDDIFY" | "X4G" | "NAHAN"
+// PanelType values: "THREEXUI" | "X4G" | "NAHAN"
 // Server status values: "ACTIVE" | "DISABLED"
 // User status values: "ACTIVE" | "DISABLED" | "EXPIRED"
 
@@ -31,7 +31,7 @@ datasource db {
 model Server {
   id          String    @id @default(cuid())
   name        String // friendly label, e.g. "Germany-1"
-  panelType   String // "MARZBAN" | "THREEXUI" | "HIDDIFY" | "X4G" | "NAHAN"
+  panelType   String // "THREEXUI" | "X4G" | "NAHAN"
   baseUrl     String // e.g. https://panel.example.com:8000
   username    String // panel admin username
   password    String // panel admin password (consider secrets manager in prod)

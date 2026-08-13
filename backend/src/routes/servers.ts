@@ -11,7 +11,7 @@ serversRouter.use(requireAdmin);
 
 const serverSchema = z.object({
   name: z.string().min(1),
-  panelType: z.enum(["MARZBAN", "THREEXUI", "HIDDIFY", "X4G", "NAHAN"]),
+  panelType: z.enum(["THREEXUI", "X4G", "NAHAN"]),
   baseUrl: z.string().url(),
   username: z.string().optional(),
   password: z.string().optional(),

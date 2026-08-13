@@ -10,7 +10,7 @@ import {
 // Adapter for X4G (https://github.com/x4gKing/X4G) — a lightweight VLESS
 // over WebSocket/XHTTP gateway with an in-memory/JSON-file "links" store.
 //
-// Unlike Marzban/3x-ui/Hiddify, X4G has no concept of a "user" with a
+// Unlike 3x-ui, X4G has no concept of a "user" with a
 // username — it only has share-links ("لینک‌ها"). Each link IS the
 // account: one UUID, one VLESS config, an optional traffic cap and
 // expiry. So here `remoteId` is the link's uuid, and `username` from

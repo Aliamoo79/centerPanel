@@ -18,9 +18,7 @@ export function daysLeft(d: string | Date | null): number | null {
 }
 
 const PANEL_LABELS: Record<string, string> = {
-  MARZBAN: "Marzban",
   THREEXUI: "3x-ui",
-  HIDDIFY: "Hiddify",
   X4G: "X4G",
   NAHAN: "Nahan",
 };

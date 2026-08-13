@@ -12,7 +12,7 @@ const dateValue = z.string().datetime().nullable();
 const serverSchema = z.object({
   id: z.string().min(1),
   name: z.string(),
-  panelType: z.enum(["MARZBAN", "THREEXUI", "HIDDIFY", "X4G", "NAHAN"]),
+  panelType: z.enum(["THREEXUI", "X4G", "NAHAN"]),
   baseUrl: z.string(),
   username: z.string(),
   password: z.string(),

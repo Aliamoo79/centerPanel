@@ -1,4 +1,4 @@
-// Common contract every panel adapter (Marzban / 3x-ui / Hiddify / ...) must
+// Common contract every panel adapter (3x-ui / X4G / Nahan) must
 // implement. The rest of the app (routes, subscription builder, usage
 // aggregator) only ever talks to this interface — never to a specific
 // panel's API directly. That's what lets you swap a server's address,
@@ -14,8 +14,7 @@ export interface CreateRemoteUserParams {
   /**
    * Max simultaneous connection/device IPs, or null/undefined for
    * unlimited. Only enforced by panels that natively support it
-   * (3x-ui, X4G). Adapters for panels without this feature (Marzban,
-   * Hiddify) silently ignore it.
+   * (3x-ui, X4G). Adapters without this feature silently ignore it.
    */
   ipLimit?: number | null;
 }

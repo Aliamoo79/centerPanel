@@ -11,7 +11,7 @@ import {
 // Adapter for Nahan (https://github.com/itsyebekhe/nahan) — a single
 // Cloudflare Worker acting as a VLESS/Trojan gateway, config stored in a
 // D1/KV binding. IMPORTANT: this is architecturally very different from
-// Marzban/3x-ui/Hiddify/X4G, which are all real multi-tenant panels with
+// 3x-ui/X4G, which are multi-tenant panels with
 // per-user REST resources. Nahan is a *single worker* whose entire
 // config (protocol, clean IPs, and an optional `users` array of extra
 // "profiles") lives in one JSON blob, and every save (`/api/sync`)
@@ -24,7 +24,7 @@ import {
 //
 // Auth is a single stateless "master key" sent as `{ key }` in the body
 // of every request (no session/cookie) — store it in the Server row's
-// `password` field; `username` isn't used, same as Hiddify/X4G.
+// `password` field; `username` isn't used, same as X4G.
 //
 // Known limitations of the underlying panel (not adapter bugs):
 //  - No per-profile "enabled" flag exists. A profile only disappears
@@ -33,7 +33,7 @@ import {
 //    expiry and force-expiring the profile, then restoring it — the
 //    same trick an admin would do by hand.
 //  - No per-profile simultaneous-IP limit at all, so `ipLimit` passed
-//    in is accepted and ignored, same as Marzban/Hiddify.
+//    in is accepted and ignored.
 //  - Usage (`usedBytes`) comes from Nahan's own best-effort in-memory
 //    counter periodically flushed to storage — treat it as approximate,
 //    not a metered billing-grade figure.
