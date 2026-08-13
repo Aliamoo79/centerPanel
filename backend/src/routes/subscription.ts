@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db";
 import { buildSubscription } from "../services/subscription";
-import { syncUserUsage } from "../services/usage";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
 
@@ -9,6 +8,25 @@ export const subscriptionRouter = Router();
 
 function formatGB(bytes: number): string {
   return (bytes / 1024 ** 3).toLocaleString("fa-IR", { maximumFractionDigits: 2 });
+}
+
+function cachedUsage(user: any) {
+  let usedBytes = 0;
+  const countedRemoteAccounts = new Set<string>();
+
+  for (const link of user.links) {
+    const remoteAccountKey = link.server.panelType === "THREEXUI"
+      ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+      : `${link.serverId}:${link.remoteId}`;
+    if (countedRemoteAccounts.has(remoteAccountKey)) continue;
+    countedRemoteAccounts.add(remoteAccountKey);
+    usedBytes += link.usedBytes;
+  }
+
+  return {
+    usedBytes,
+    dataLimitBytes: user.dataLimitGB ? user.dataLimitGB * 1024 ** 3 : null,
+  };
 }
 
 function htmlPage(user: any, usage: { usedBytes: number; dataLimitBytes: number | null }) {
@@ -102,8 +120,9 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
 subscriptionRouter.get(
   "/:token",
   asyncHandler(async (req, res) => {
-    let user = await prisma.user.findUnique({ where: { subToken: req.params.token }, include: { links: true } });
-    if (!user) user = await prisma.user.findUnique({ where: { username: req.params.token }, include: { links: true } });
+    const include = { links: { include: { server: true } } } as const;
+    let user = await prisma.user.findUnique({ where: { subToken: req.params.token }, include });
+    if (!user) user = await prisma.user.findUnique({ where: { username: req.params.token }, include });
     if (!user) {
       logger.warn("sub_link_not_found", `درخواست لینک ساب با توکن/نام‌کاربری نامعتبر: ${req.params.token}`, {
         token: req.params.token,
@@ -123,9 +142,10 @@ subscriptionRouter.get(
     const isBrowser = accept.includes("text/html") && (ua.includes("mozilla") || ua.includes("chrome") || ua.includes("safari") || ua.includes("firefox") || ua.includes("edge"));
 
     if (isBrowser) {
-      const usage = await syncUserUsage(user.id);
+      const usage = cachedUsage(user);
       const enrichedLinks = user.links.filter((l: any) => l.enabled).length;
       const enriched = { ...user, _configCount: enrichedLinks };
+      res.setHeader("cache-control", "no-store");
       return res.type("html").send(htmlPage(enriched, usage));
     }
 
