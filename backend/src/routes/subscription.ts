@@ -111,7 +111,7 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
     document.getElementById("import-v2box").href =
       "v2box://install-sub?url=" + encodeURIComponent(subscriptionUrl) + "&name=" + encodeURIComponent(subscriptionName);
     document.getElementById("import-v2rayng").href =
-      "v2rayng://install-sub?url=" + encodeURIComponent(subscriptionUrl) + "#" + encodeURIComponent(subscriptionName);
+      "v2rayng://install-sub/?url=" + encodeURIComponent(subscriptionUrl + "#" + subscriptionName);
   })();
 </script>
 </body></html>`;
@@ -161,7 +161,8 @@ subscriptionRouter.get(
     });
 
     res.setHeader("subscription-userinfo", payload.userInfoHeader);
-    res.setHeader("profile-update-interval", "6");
+    res.setHeader("profile-update-interval", "720");
+    res.setHeader("profile-title", `base64:${Buffer.from(user.displayName, "utf-8").toString("base64")}`);
     res.setHeader("content-type", "text/plain; charset=utf-8");
     res.setHeader("cache-control", "no-store");
 

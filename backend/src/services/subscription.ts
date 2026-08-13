@@ -1,8 +1,20 @@
 import { prisma } from "../db";
 import { getAdapter } from "../adapters";
-import { syncUserUsage } from "./usage";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
+
+const SUPPORTED_CONFIG_URI = /^(vless|vmess|trojan|ss|socks|hysteria2|hy2):\/\//i;
+const CONFIG_FETCH_TIMEOUT_MS = 12000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Config fetch timed out after ${timeoutMs} ms`)), timeoutMs);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); }
+    );
+  });
+}
 
 /**
  * Replace the remark (display name) of a share URI with a custom one.
@@ -49,10 +61,21 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
   });
   if (!user) return null;
 
-  // Sync first so a request that crosses the combined quota cannot receive
-  // one final set of configs before background enforcement catches up.
-  const usage = await syncUserUsage(user.id);
-  const quotaExceeded = usage.dataLimitBytes !== null && usage.usedBytes >= usage.dataLimitBytes;
+  // Subscription refresh must not depend on every panel being online. Usage
+  // is refreshed and quota is enforced by the background sync; use that
+  // cached snapshot here so one unreachable server cannot fail the response.
+  let usedBytes = 0;
+  const countedRemoteAccounts = new Set<string>();
+  for (const link of user.links) {
+    const remoteAccountKey = link.server.panelType === "THREEXUI"
+      ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+      : `${link.serverId}:${link.remoteId}`;
+    if (countedRemoteAccounts.has(remoteAccountKey)) continue;
+    countedRemoteAccounts.add(remoteAccountKey);
+    usedBytes += link.usedBytes;
+  }
+  const dataLimitBytes = user.dataLimitGB ? user.dataLimitGB * 1024 ** 3 : null;
+  const quotaExceeded = dataLimitBytes !== null && usedBytes >= dataLimitBytes;
 
   // Compute effective status (expiry check happens live, not just off the stored flag)
   let status = user.status as "ACTIVE" | "DISABLED" | "EXPIRED";
@@ -63,42 +86,48 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
   const seenConfigUris = new Set<string>();
 
   if (status === "ACTIVE") {
-    for (const link of user.links) {
-      if (!link.enabled) continue; // this specific server's config was turned off by the admin
+    const enabledLinks = user.links.filter((link) => link.enabled);
+    const results = await Promise.all(enabledLinks.map(async (link) => {
       try {
         const adapter = getAdapter(link.server.panelType as any, link.server);
         const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
-        const configs = await adapter.getConfigs(link.remoteId, remoteExtra);
+        const configs = await withTimeout(adapter.getConfigs(link.remoteId, remoteExtra), CONFIG_FETCH_TIMEOUT_MS);
         const prefix = (link.server as any).remarkPrefix as string | null;
-        configs.forEach((cfg, i) => {
-          // Multiple local 3x-ui server rows may represent different inbounds
-          // on one panel. Its links endpoint returns all links for the shared
-          // client each time, so deduplicate before applying local remarks.
-          if (seenConfigUris.has(cfg.uri)) return;
-          seenConfigUris.add(cfg.uri);
+        return configs
+          .filter((cfg) => SUPPORTED_CONFIG_URI.test(cfg.uri))
+          .map((cfg, i) => {
           if (prefix) {
             // Base remark is "{prefix}-{username}"; if a server hands back
             // more than one config (e.g. multiple clean IPs), a numeric
             // suffix keeps them distinguishable in the client's config list
             // instead of colliding on the exact same name.
             const remark = i === 0 ? `${prefix}-${user.displayName}` : `${prefix}-${user.displayName}-${i + 1}`;
-            rawConfigs.push(withRemark(cfg.uri, remark));
-          } else {
-            rawConfigs.push(cfg.uri);
+            return withRemark(cfg.uri, remark);
           }
+          return cfg.uri;
         });
       } catch (err: any) {
         logger.warn("sub_configs_fetch_failed", `دریافت کانفیگ «${user.username}» از سرور «${link.server.name}» ناموفق بود: ${describePanelError(err)}`, {
           userId: user.id,
           serverId: link.serverId,
         });
+        return [];
+      }
+    }));
+
+    for (const configs of results) {
+      for (const uri of configs) {
+        // Multiple local rows may return the same remote config.
+        if (seenConfigUris.has(uri)) continue;
+        seenConfigUris.add(uri);
+        rawConfigs.push(uri);
       }
     }
   }
 
-  const total = usage.dataLimitBytes ?? 0; // 0 conventionally means unlimited to most clients
+  const total = dataLimitBytes ?? 0; // 0 conventionally means unlimited to most clients
   const expireEpoch = user.expireAt ? Math.floor(user.expireAt.getTime() / 1000) : 0;
-  const userInfoHeader = `upload=0; download=${Math.floor(usage.usedBytes)}; total=${Math.floor(total)}; expire=${expireEpoch}`;
+  const userInfoHeader = `upload=0; download=${Math.floor(usedBytes)}; total=${Math.floor(total)}; expire=${expireEpoch}`;
 
   const base64Body = Buffer.from(rawConfigs.join("\n"), "utf-8").toString("base64");
 

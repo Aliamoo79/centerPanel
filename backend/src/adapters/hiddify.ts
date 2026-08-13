@@ -96,10 +96,28 @@ export class HiddifyAdapter implements PanelAdapter {
   }
 
   async getConfigs(remoteId: string): Promise<RemoteConfig[]> {
-    // Hiddify exposes a per-user subscription page rather than discrete
-    // URIs via this endpoint; the sub link itself already aggregates all
-    // of that server's configs for the user.
+    // Hiddify exposes a nested subscription URL. Resolve it here: emitting
+    // that HTTPS URL as a config line makes clients treat it as a proxy URI
+    // and can cause the entire aggregate subscription import to fail.
     const subBase = (this.creds.baseUrl ?? "").replace(/\/$/, "");
-    return [{ protocol: "hiddify-sub", uri: `${subBase}/${remoteId}/sub/`, label: remoteId }];
+    const response = await axios.get<string>(`${subBase}/${remoteId}/sub/`, {
+      timeout: 10000,
+      responseType: "text",
+      headers: { Accept: "*/*", "User-Agent": "v2rayNG" },
+    });
+    const body = String(response.data ?? "").trim();
+    const decoded = /^[A-Za-z0-9+/=_\r\n-]+$/.test(body)
+      ? Buffer.from(body.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf-8")
+      : body;
+    const supported = /^(vless|vmess|trojan|ss|socks|hysteria2|hy2):\/\//i;
+    return decoded
+      .split(/\r?\n/)
+      .map((uri) => uri.trim())
+      .filter((uri) => supported.test(uri))
+      .map((uri, index) => ({
+        protocol: uri.slice(0, uri.indexOf(":")),
+        uri,
+        label: `${remoteId}-${index + 1}`,
+      }));
   }
 }
