@@ -47,7 +47,18 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
 .val{font-weight:600;direction:ltr;text-align:left}
 .status-active{color:#22c55e}
 .status-inactive{color:#ef4444}
-.badge{display:block;text-align:center;background:#334155;color:#94a3b8;border-radius:10px;padding:10px;font-size:12.5px;margin-top:18px;line-height:1.7}
+.imports{border-top:1px solid #334155;margin-top:20px;padding-top:18px}
+.imports-title{color:#f1f5f9;font-size:14px;font-weight:700;margin:0 0 5px}
+.imports-help{color:#94a3b8;font-size:12.5px;line-height:1.7;margin:0 0 12px}
+.import-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.import-btn{align-items:center;border:1px solid #475569;border-radius:11px;color:#f8fafc;display:flex;font-size:13px;font-weight:700;justify-content:center;min-height:46px;padding:10px 12px;text-decoration:none;transition:background-color .15s,border-color .15s,transform .15s}
+.import-btn:hover{background:#334155;border-color:#64748b}
+.import-btn:active{transform:translateY(1px)}
+.import-btn:focus-visible{outline:3px solid rgba(56,189,248,.35);outline-offset:2px}
+.import-btn-primary{background:#2563eb;border-color:#3b82f6}
+.import-btn-primary:hover{background:#1d4ed8;border-color:#60a5fa}
+@media(max-width:360px){.import-actions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.import-btn{transition:none}}
 </style></head>
 <body>
 <div class="card">
@@ -66,8 +77,25 @@ h1{font-size:19px;margin:0 0 2px;color:#f1f5f9;word-break:break-all}
 <div class="row"><span class="label">تاریخ انقضا</span><span class="val">${expireDate}</span></div>
 <div class="row"><span class="label">تعداد کانفیگ</span><span class="val">${user._configCount ?? 0}</span></div>
 
-<div class="badge">این لینک را در v2rayNG / NekoBox / Hiddify / Streisand باز کنید</div>
+<section class="imports" aria-labelledby="imports-title">
+  <h2 class="imports-title" id="imports-title">افزودن اشتراک به برنامه</h2>
+  <p class="imports-help">برنامه موردنظر را انتخاب کنید تا این لینک به‌صورت خودکار اضافه شود.</p>
+  <div class="import-actions">
+    <a class="import-btn import-btn-primary" id="import-v2box" href="#">افزودن به V2Box</a>
+    <a class="import-btn" id="import-v2rayng" href="#">افزودن به v2rayNG</a>
+  </div>
+</section>
 </div>
+<script>
+  (() => {
+    const subscriptionUrl = window.location.origin + window.location.pathname;
+    const subscriptionName = document.querySelector("h1")?.textContent?.trim() || "VPN";
+    document.getElementById("import-v2box").href =
+      "v2box://install-sub?url=" + encodeURIComponent(subscriptionUrl) + "&name=" + encodeURIComponent(subscriptionName);
+    document.getElementById("import-v2rayng").href =
+      "v2rayng://install-sub?url=" + encodeURIComponent(subscriptionUrl) + "#" + encodeURIComponent(subscriptionName);
+  })();
+</script>
 </body></html>`;
 }
 
