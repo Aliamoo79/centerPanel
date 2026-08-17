@@ -4,15 +4,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: "#0B0E14",
-        panel: "#11151F",
-        panel2: "#161B27",
-        line: "#232A3A",
-        mint: "#4CE0B3",
-        signal: "#5B8CFF",
-        warn: "#F2B35C",
-        danger: "#F26D6D",
-        muted: "#7C8698",
+        ink: "#0D1210",
+        panel: "#131A17",
+        panel2: "#19231E",
+        line: "#2B3932",
+        mint: "#68D7A7",
+        signal: "#C6F36A",
+        warn: "#F0A45D",
+        danger: "#F27368",
+        muted: "#95A49D",
       },
       fontFamily: {
         display: ["'Vazirmatn'", "system-ui", "sans-serif"],

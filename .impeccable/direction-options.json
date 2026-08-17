@@ -1,0 +1,133 @@
+{
+  "title": "Choose Panel’s new visual world",
+  "question": "Each direction preserves the full product while changing how the team reads and operates it.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Topology Atlas",
+      "kicker": "THE ROLL",
+      "lineage": "network topology atlases and infrastructure maps",
+      "thesis": "Panel becomes a calm operational atlas where servers, customers, and subscription paths read as one connected system.",
+      "palette": ["#F1EFE8", "#17211D", "#226B55", "#D96B3B"],
+      "materials": ["uncoated map stock", "fine routing ink", "status tabs"],
+      "viewport": "A narrow command rail frames a live operational field, with health summaries above a precise queue of users and servers.",
+      "risk": "The map logic can become ornamental unless every connector carries real meaning.",
+      "raised": [
+        {"from": "Nixie Counter", "raise": "Critical quantities receive unmistakable fixed-position emphasis."},
+        {"from": "Reference Setting", "raise": "Every divider, bracket, and alignment follows one rigorous ruling system."},
+        {"from": "Crouwel Grid", "raise": "The construction grid remains visibly structural instead of becoming generic cards."}
+      ],
+      "wireframe": {"cols": 12, "rows": 10, "regions": [
+        {"label": "command rail", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true},
+        {"label": "system pulse", "x": 2, "y": 0, "w": 10, "h": 3},
+        {"label": "operator queue", "x": 2, "y": 3, "w": 7, "h": 7, "accent": true},
+        {"label": "status ledger", "x": 9, "y": 3, "w": 3, "h": 7}
+      ]},
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "model-pick",
+      "label": "NOC Shift Board",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "network operations centers and shift handover boards",
+      "thesis": "The dashboard behaves like a beautifully disciplined shift board: current state, exceptions, and next actions always visible.",
+      "palette": ["#101614", "#E7E6DC", "#65D6A6", "#F0A35B"],
+      "materials": ["matte instrument panel", "status lamps", "operator labels"],
+      "viewport": "A high-signal overview pairs large system health with a compact exception queue and direct operational shortcuts.",
+      "risk": "It is the most familiar operational direction and needs exceptional typography to avoid standard dark-dashboard territory.",
+      "wireframe": {"cols": 12, "rows": 10, "regions": [
+        {"label": "navigation", "x": 0, "y": 0, "w": 2, "h": 10},
+        {"label": "system state", "x": 2, "y": 0, "w": 10, "h": 4, "accent": true},
+        {"label": "exceptions", "x": 2, "y": 4, "w": 6, "h": 6},
+        {"label": "actions", "x": 8, "y": 4, "w": 4, "h": 6}
+      ]},
+      "comp": ".impeccable/mocks/decision/model-pick.webp"
+    },
+    {
+      "id": "challenger-reference",
+      "label": "Ruling Engine Ledger",
+      "verdict": "competitive",
+      "lineage": "reference-setting pages and technical ledgers",
+      "thesis": "Panel becomes a precise operational ledger with a fixed action rail and annotation margins for exceptions.",
+      "palette": ["#F0E9DA", "#171713", "#B8442F"],
+      "materials": ["unbleached paper", "one-pixel rules", "rubric marks"],
+      "viewport": "Dense customer and server records sit in measured columns around a fixed rail of actions and states.",
+      "case": "Wins on product clarity and density discipline; audience identification is less immediate than a network-native atlas.",
+      "risk": "Long Persian labels may strain the strict column measure if the responsive rules are not exact.",
+      "hero": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting.webp",
+      "wireframe": {"cols": 12, "rows": 10, "regions": [
+        {"label": "key rail", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true},
+        {"label": "records", "x": 2, "y": 0, "w": 7, "h": 10},
+        {"label": "annotations", "x": 9, "y": 0, "w": 3, "h": 10}
+      ]},
+      "comp": ".impeccable/mocks/decision/challenger-reference.webp"
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "Visible Systems Grid",
+      "verdict": "competitive",
+      "lineage": "Wim Crouwel construction-grid specimens",
+      "thesis": "A visible modular grid makes the system’s structure and hierarchy impossible to miss.",
+      "palette": ["#F7F5EF", "#182E4B", "#E35432"],
+      "materials": ["construction grid", "engineered lettering", "signal planes"],
+      "viewport": "A monumental health statement anchors an openly gridded field of task modules and live records.",
+      "case": "Matches product clarity through rigorous hierarchy; identification is more design-cultural than reseller-native.",
+      "risk": "Oversized constructed type could consume space needed by operational data.",
+      "hero": "https://impeccable.style/worlds/cards/crouwel-grid-specimen-hero.webp",
+      "board": "https://impeccable.style/worlds/cards/crouwel-grid-specimen.webp",
+      "wireframe": {"cols": 12, "rows": 10, "regions": [
+        {"label": "system headline", "x": 0, "y": 0, "w": 12, "h": 3, "accent": true},
+        {"label": "task grid", "x": 0, "y": 3, "w": 4, "h": 7},
+        {"label": "live records", "x": 4, "y": 3, "w": 8, "h": 7}
+      ]},
+      "comp": ".impeccable/mocks/decision/challenger-crouwel.webp"
+    },
+    {
+      "id": "challenger-nixie",
+      "label": "Nixie Instrument Bank",
+      "verdict": "declined",
+      "lineage": "nixie-tube laboratory counters",
+      "thesis": "Every operational quantity becomes a glowing physical counter in a blackened instrument rack.",
+      "palette": ["#11100E", "#FF7A24", "#A5A09A"],
+      "materials": ["glass tubes", "blackened steel", "engraved caps"],
+      "viewport": "Fixed banks of glowing counts dominate above compact server and customer controls.",
+      "case": "Memorable for monitoring, but weak for frequent forms, tables, and long Persian content.",
+      "kept": "Quantities deserve fixed positions and unmistakable emphasis.",
+      "risk": "The physical metaphor overwhelms routine administration.",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-nixie-laboratory-counter-hero.webp"
+    },
+    {
+      "id": "challenger-arcade",
+      "label": "Phosphor Operations Grid",
+      "verdict": "declined",
+      "lineage": "pixel-art arcade cabinet screens",
+      "thesis": "The control panel becomes a strict luminous tile system with sprite-like state changes.",
+      "palette": ["#090B10", "#51E49A", "#F4CE45", "#F5F7F2"],
+      "materials": ["phosphor pixels", "scanline gaps", "tile grid"],
+      "viewport": "A tile-perfect status field presents metrics, alerts, and routes as one luminous operating screen.",
+      "case": "Strong state language, but the game association undermines trust for customer operations.",
+      "kept": "State colors operate as strict laws rather than decoration.",
+      "risk": "It can feel playful when the team needs authority and calm.",
+      "hero": "https://impeccable.style/worlds/cards/medium-native-crt-arcade-pixel-glow-hero.webp"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code", "toggle": true},
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A polished modern SaaS admin dashboard with familiar cards, sidebar navigation, and blue status accents.",
+    "palette": ["#FFFFFF", "#111827", "#2563EB", "#E5E7EB"],
+    "materials": ["clean panels", "soft shadows", "standard data cards"],
+    "viewport": "A conventional sidebar surrounds summary cards, charts, and recent activity.",
+    "risk": "Easy to learn, but intentionally resembles many existing admin products.",
+    "wireframe": {"cols": 12, "rows": 10, "regions": [
+      {"label": "sidebar", "x": 0, "y": 0, "w": 2, "h": 10},
+      {"label": "summary cards", "x": 2, "y": 0, "w": 10, "h": 3},
+      {"label": "table", "x": 2, "y": 3, "w": 10, "h": 7}
+    ]},
+    "comp": ".impeccable/mocks/decision/canon.webp"
+  },
+  "steer": true
+}

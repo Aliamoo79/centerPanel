@@ -2,7 +2,7 @@ import React from "react";
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-panel border border-line rounded-xl ${className}`}>{children}</div>
+    <div className={`ops-surface border border-line rounded-[14px] shadow-[0_18px_50px_rgba(0,0,0,.16)] ${className}`}>{children}</div>
   );
 }
 
@@ -19,9 +19,9 @@ export function LoadingRegion({ label, children, className = "" }: { label: stri
   );
 }
 
-export function StatusDot({ ok, pulse = false }: { ok: boolean; pulse?: boolean }) {
+export function StatusDot({ ok, pulse = false, label }: { ok: boolean; pulse?: boolean; label?: string }) {
   return (
-    <span className="relative inline-flex h-2.5 w-2.5">
+    <span className="relative inline-flex h-2.5 w-2.5" role="img" aria-label={label ?? (ok ? "فعال" : "غیرفعال")}>
       {pulse && ok && (
         <span className="absolute inline-flex h-full w-full rounded-full bg-mint opacity-60 animate-ping" />
       )}
@@ -38,10 +38,10 @@ export function Button({
   className = "",
   ...rest
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "danger" }) {
-  const base = "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
+  const base = "min-h-10 px-4 py-2.5 rounded-[10px] text-sm font-semibold transition-[background-color,color,border-color,transform] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
   const styles = {
-    primary: "bg-signal text-white hover:bg-signal/90",
-    ghost: "bg-transparent border border-line text-white hover:bg-panel2",
+    primary: "bg-signal text-ink hover:bg-[#D5F88A] shadow-[0_8px_24px_rgba(198,243,106,.12)]",
+    ghost: "bg-panel2 border border-line text-white hover:border-muted/60 hover:bg-[#202C26]",
     danger: "bg-danger/10 border border-danger/40 text-danger hover:bg-danger/20",
   }[variant];
   return (
@@ -56,7 +56,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       // text-[16px] on mobile prevents iOS from auto-zooming on focus
-      className={`w-full bg-panel2 border border-line rounded-lg px-3 py-2.5 text-[16px] sm:text-sm text-white placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-signal/50 ${props.className ?? ""}`}
+      className={`w-full bg-[#0F1613] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white placeholder:text-muted focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 transition ${props.className ?? ""}`}
     />
   );
 }
@@ -65,7 +65,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full bg-panel2 border border-line rounded-lg px-3 py-2.5 text-[16px] sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-signal/50 ${props.className ?? ""}`}
+      className={`w-full bg-[#0F1613] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 transition ${props.className ?? ""}`}
     />
   );
 }
