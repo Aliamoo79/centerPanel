@@ -12,6 +12,12 @@ html, body {
 html { color-scheme: dark; }
 body { margin: 0; }
 
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -59,11 +65,49 @@ input, select, button { caret-color: #A99FFF; }
   pointer-events: none;
 }
 
-.page-enter { animation: page-resolve .42s cubic-bezier(.16,1,.3,1) both; }
+.page-enter { animation: page-resolve 260ms var(--ease-out) both; }
 @keyframes page-resolve {
-  from { opacity: .6; filter: blur(5px); transform: translateY(7px); }
+  from { opacity: .72; filter: blur(3px); transform: translateY(6px); clip-path: inset(0 0 10px 0); }
   to { opacity: 1; filter: blur(0); transform: translateY(0); }
 }
+
+.network-pulse { isolation: isolate; }
+.network-link {
+  fill: none;
+  stroke: #8B7CFF;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 7;
+  stroke-dashoffset: 0;
+  opacity: .58;
+  animation: network-resolve 700ms var(--ease-out) both;
+}
+.network-link.is-offline { stroke: #F27368; opacity: .48; }
+.network-node { fill: #151A30; stroke-width: 2; }
+.network-node.is-healthy { stroke: #52D3B0; }
+.network-node.is-offline { stroke: #F27368; }
+.network-node-core { fill: rgba(139, 124, 255, .22); }
+.network-label { fill: #9AA3BD; font: 500 11px 'Vazirmatn', system-ui, sans-serif; }
+.network-count { fill: #F1F4EF; font: 700 10px 'JetBrains Mono', ui-monospace, monospace; }
+.network-hub-ring {
+  fill: none;
+  stroke: rgba(139, 124, 255, .28);
+  stroke-width: 1;
+  transform-origin: 360px 130px;
+  animation: hub-resolve 700ms var(--ease-out) both;
+}
+.network-hub { fill: #8B7CFF; stroke: #A99FFF; stroke-width: 1; }
+.network-hub-value { fill: #0B0E19; font: 700 18px 'JetBrains Mono', ui-monospace, monospace; }
+.network-hub-label { fill: #222044; font: 600 8px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .12em; }
+@keyframes network-resolve { from { stroke-dashoffset: 34; opacity: .12; } }
+@keyframes hub-resolve { from { opacity: 0; transform: scale(.9); } }
+
+.network-loader { position: relative; width: 72px; height: 72px; }
+.network-loader span { position: absolute; inset: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: #8B7CFF; }
+.network-loader span:nth-child(1) { transform: translateX(30px); }
+.network-loader span:nth-child(2) { transform: rotate(120deg) translateX(30px); }
+.network-loader span:nth-child(3) { transform: rotate(240deg) translateX(30px); }
+.network-loader::after { content: ""; position: absolute; inset: 12px; border: 1px dashed rgba(139,124,255,.45); border-radius: 50%; animation: network-spin 1.8s linear infinite; }
+@keyframes network-spin { to { transform: rotate(360deg); } }
 
 .skeleton {
   position: relative;
@@ -88,10 +132,28 @@ input, select, button { caret-color: #A99FFF; }
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-toast-in { animation: toast-in .18s ease-out; }
+.animate-toast-in { animation: toast-in 180ms var(--ease-out); }
 
 @keyframes sheet-in {
   from { transform: translateY(100%); opacity: .6; }
   to { transform: translateY(0); opacity: 1; }
 }
-.animate-sheet-in { animation: sheet-in .22s ease-out; }
+.animate-sheet-in { animation: sheet-in 240ms var(--ease-drawer); }
+
+@media (hover: hover) and (pointer: fine) {
+  .network-pulse:hover .network-hub { filter: brightness(1.08); }
+}
+
+@media (max-width: 480px) {
+  .network-label { font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .network-link, .network-hub-ring { animation: none; }
+  .network-loader::after { animation: none; border-style: solid; }
+  .animate-toast-in { animation: toast-fade 160ms ease; }
+  .animate-sheet-in { animation: sheet-fade 180ms ease; }
+}
+
+@keyframes toast-fade { from { opacity: .65; } to { opacity: 1; } }
+@keyframes sheet-fade { from { opacity: .7; } to { opacity: 1; } }

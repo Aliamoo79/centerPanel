@@ -111,7 +111,7 @@ The system is code-led and deliberately avoids an AI-created feel. Repeated prim
 - Matte green-black instrument surfaces with fine structural seams.
 - Exception-first operational hierarchy and compact, scannable density.
 - Persian RTL prose paired with isolated LTR monospaced numerics.
-- Lime action/state emphasis supported by semantic health, warning, and danger tones.
+- Violet action emphasis supported by semantic health, warning, and danger tones.
 - Restrained ambient depth and a short page-resolve motion on navigation.
 
 ## Colors
@@ -226,7 +226,7 @@ The form language is precise but not severe. Controls use a consistent 10px corn
 
 ### Navigation
 
-Desktop navigation occupies the fixed right rail with icon-and-label rows. The active route becomes a solid Signal Violet instrument tab; inactive routes remain muted and lift tonally on hover. Mobile uses fixed top and bottom bars with translucent rack surfaces, backdrop blur, safe-area padding, and an active lime icon/label treatment rather than a filled tab.
+Desktop navigation occupies the fixed right rail with icon-and-label rows. The active route becomes a solid Signal Violet instrument tab; inactive routes remain muted and lift tonally on hover. Mobile uses fixed top and bottom bars with translucent rack surfaces, backdrop blur, safe-area padding, and an active violet icon/label treatment rather than a filled tab.
 
 ### Signal Gauge
 
@@ -238,7 +238,7 @@ Skeletons use a Raised Instrument base with a narrow traveling violet signal. Lo
 
 ### Motion
 
-Route content resolves over 420ms with a 7px rise, blur reduction, and `cubic-bezier(.16,1,.3,1)`. Toasts enter in 180ms and mobile sheets in 220ms. Reduced-motion preference disables the page and skeleton animations.
+Route content resolves over 260ms with a 7px rise, blur reduction, and `cubic-bezier(.23,1,.32,1)`. Toasts enter in 180ms and mobile sheets in 240ms. The Overview network topology is the single authored focal moment: real server and user counts resolve through a 700ms line-and-node sequence, while its loader turns slowly at 1.8s. Frequent navigation, fields, and row interactions stay at 150ms and animate only color, border, shadow, opacity, or transform. Reduced-motion preference removes spatial movement and replaces transient entrances with short opacity fades.
 
 ## Do's and Don'ts
 

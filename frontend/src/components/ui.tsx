@@ -56,7 +56,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       // text-[16px] on mobile prevents iOS from auto-zooming on focus
-      className={`w-full bg-[#0E1222] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white placeholder:text-muted focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/20 transition ${props.className ?? ""}`}
+      className={`w-full bg-[#0E1222] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white placeholder:text-muted focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/20 transition-[border-color,box-shadow] duration-150 ${props.className ?? ""}`}
     />
   );
 }
@@ -65,7 +65,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full bg-[#0E1222] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/20 transition ${props.className ?? ""}`}
+      className={`w-full bg-[#0E1222] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/20 transition-[border-color,box-shadow] duration-150 ${props.className ?? ""}`}
     />
   );
 }

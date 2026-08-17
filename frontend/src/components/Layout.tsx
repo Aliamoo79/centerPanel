@@ -24,7 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-3 py-2 space-y-1.5">
           {nav.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) =>
-              `group flex items-center gap-3 px-3.5 py-3 rounded-[10px] text-sm transition-all ${isActive ? "bg-signal text-ink font-semibold shadow-[0_10px_28px_rgba(139,124,255,.18)]" : "text-muted hover:text-white hover:bg-panel2"}`
+              `group flex items-center gap-3 px-3.5 py-3 rounded-[10px] text-sm transition-[background-color,color,box-shadow] duration-150 ${isActive ? "bg-signal text-ink font-semibold shadow-[0_10px_28px_rgba(139,124,255,.18)]" : "text-muted hover:text-white hover:bg-panel2"}`
             }>
               <item.icon />{item.label}
             </NavLink>
@@ -32,7 +32,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="mx-3 mb-3 px-3 py-3 border border-line rounded-[12px] bg-[#0B0E19]">
           <p className="text-[11px] text-muted mb-2">نشست مدیریت</p>
-          <button onClick={logout} className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-muted hover:text-danger hover:bg-danger/10 transition-colors">
+          <button onClick={logout} className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-muted hover:text-danger hover:bg-danger/10 transition-colors duration-150">
             <LogoutIcon />خروج از حساب
           </button>
         </div>
@@ -41,7 +41,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-[#101322]/95 backdrop-blur-md border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="h-14 flex items-center justify-between px-4">
           <BrandCompact />
-          <button onClick={logout} aria-label="خروج از حساب" className="h-10 w-10 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 active:scale-95 transition"><LogoutIcon /></button>
+          <button onClick={logout} aria-label="خروج از حساب" className="h-10 w-10 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 active:scale-95 transition-[background-color,color,transform] duration-150"><LogoutIcon /></button>
         </div>
       </header>
 
@@ -55,8 +55,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#101322]/95 backdrop-blur-md border-t border-line flex" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {nav.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) => `flex-1 flex flex-col items-center gap-1 min-h-[60px] justify-center text-[11px] transition-colors ${isActive ? "text-signal" : "text-muted"}`}>
-            {({ isActive }) => <><span className={`flex items-center justify-center rounded-full px-3 py-0.5 transition-colors ${isActive ? "bg-signal/10" : ""}`}><item.icon /></span>{item.label}</>}
+          <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) => `flex-1 flex flex-col items-center gap-1 min-h-[60px] justify-center text-[11px] transition-colors duration-150 ${isActive ? "text-signal" : "text-muted"}`}>
+            {({ isActive }) => <><span className={`flex items-center justify-center rounded-full px-3 py-0.5 transition-colors duration-150 ${isActive ? "bg-signal/10" : ""}`}><item.icon /></span>{item.label}</>}
           </NavLink>
         ))}
       </nav>

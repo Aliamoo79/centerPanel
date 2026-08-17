@@ -32,9 +32,11 @@
       { "name": "login-enclosure", "value": "0 35px 100px rgba(0,0,0,.38)", "purpose": "Authentication composition only." }
     ],
     "motion": [
-      { "name": "page-resolve", "value": "420ms cubic-bezier(.16,1,.3,1)", "purpose": "Resolve route content from slight blur, opacity, and 7px vertical offset." },
+      { "name": "page-resolve", "value": "260ms cubic-bezier(.23,1,.32,1)", "purpose": "Resolve route content from slight blur, opacity, and 7px vertical offset." },
       { "name": "toast-in", "value": "180ms ease-out", "purpose": "Short status notification entrance." },
-      { "name": "sheet-in", "value": "220ms ease-out", "purpose": "Mobile bottom-sheet entrance." },
+      { "name": "sheet-in", "value": "240ms cubic-bezier(.32,.72,0,1)", "purpose": "Mobile bottom-sheet entrance." },
+      { "name": "network-resolve", "value": "700ms cubic-bezier(.23,1,.32,1)", "purpose": "Single authored focal entrance for real server links, nodes, and user hub on Overview." },
+      { "name": "network-loader", "value": "1800ms linear infinite", "purpose": "Slow topology loading turn; disabled for reduced motion." },
       { "name": "skeleton-signal", "value": "1350ms ease-in-out infinite", "purpose": "Subtle traveling violet loading signal; disabled for reduced motion." }
     ],
     "breakpoints": [
@@ -106,7 +108,7 @@
       "Matte green-black instrument surfaces with fine structural seams.",
       "Exception-first operational hierarchy and compact, scannable density.",
       "Persian RTL prose paired with isolated LTR monospaced numerics.",
-      "Lime action/state emphasis supported by semantic health, warning, and danger tones.",
+      "Violet action emphasis supported by semantic health, warning, and danger tones.",
       "Restrained ambient depth and a short page-resolve motion on navigation."
     ],
     "rules": [
