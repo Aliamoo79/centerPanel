@@ -25,7 +25,7 @@ export default class ErrorBoundary extends React.Component<{ children: React.Rea
             <p className="text-muted text-sm mb-4 break-words">{this.state.error.message}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-signal text-white hover:bg-signal/90"
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-signal text-ink hover:bg-[#A99FFF]"
             >
               بارگذاری مجدد صفحه
             </button>

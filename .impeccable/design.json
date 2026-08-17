@@ -4,16 +4,16 @@
   "title": "Design System: Panel",
   "extensions": {
     "colorMeta": {
-      "ink": { "role": "neutral", "displayName": "Rack Ink", "canonical": "#0D1210", "tonalRamp": ["#07100C", "#0D1812", "#14231B", "#213229", "#3A4A41", "#627168", "#A0AAA4", "#EDF1EE"] },
-      "panel": { "role": "neutral", "displayName": "Console Panel", "canonical": "#131A17", "tonalRamp": ["#09100D", "#101814", "#19231E", "#27342E", "#3E4C45", "#65726C", "#A2ABA7", "#EDF1EF"] },
-      "panel-raised": { "role": "neutral", "displayName": "Raised Instrument", "canonical": "#19231E", "tonalRamp": ["#0B120E", "#121B16", "#1B2721", "#2A3931", "#435249", "#69776F", "#A5AFAA", "#EEF2F0"] },
-      "field": { "role": "neutral", "displayName": "Inset Field", "canonical": "#0F1613", "tonalRamp": ["#08100C", "#0F1813", "#17231C", "#25342C", "#3D4C44", "#64726B", "#A1AAA6", "#EDF1EF"] },
-      "seam": { "role": "neutral", "displayName": "Fine Seam", "canonical": "#2B3932", "tonalRamp": ["#0C1510", "#16221B", "#24342B", "#36483E", "#516258", "#74847B", "#AAB4AF", "#F0F3F1"] },
+      "ink": { "role": "neutral", "displayName": "Rack Ink", "canonical": "#0B0E19", "tonalRamp": ["#07100C", "#0D1812", "#14231B", "#213229", "#3A4A41", "#627168", "#A0AAA4", "#EDF1EE"] },
+      "panel": { "role": "neutral", "displayName": "Console Panel", "canonical": "#111425", "tonalRamp": ["#09100D", "#101814", "#181D33", "#27342E", "#3E4C45", "#65726C", "#A2ABA7", "#EDF1EF"] },
+      "panel-raised": { "role": "neutral", "displayName": "Raised Instrument", "canonical": "#181D33", "tonalRamp": ["#0B120E", "#121B16", "#1A2038", "#2A3931", "#435249", "#69776F", "#A5AFAA", "#EEF2F0"] },
+      "field": { "role": "neutral", "displayName": "Inset Field", "canonical": "#0E1222", "tonalRamp": ["#08100C", "#0F1813", "#17231C", "#25342C", "#3D4C44", "#64726B", "#A1AAA6", "#EDF1EF"] },
+      "seam": { "role": "neutral", "displayName": "Fine Seam", "canonical": "#2A3150", "tonalRamp": ["#0C1510", "#16221B", "#24342B", "#36483E", "#516258", "#74847B", "#AAB4AF", "#F0F3F1"] },
       "text": { "role": "neutral", "displayName": "Instrument White", "canonical": "#F1F4EF", "tonalRamp": ["#20251F", "#343B32", "#50594D", "#717B6E", "#98A194", "#BEC5BA", "#DEE3DA", "#F4F6F2"] },
-      "muted": { "role": "neutral", "displayName": "Telemetry Gray", "canonical": "#95A49D", "tonalRamp": ["#18201C", "#29352F", "#3D4C45", "#58685F", "#75867D", "#95A49D", "#BCC6C1", "#EEF1EF"] },
-      "signal": { "role": "primary", "displayName": "Signal Lime", "canonical": "#C6F36A", "tonalRamp": ["#24300E", "#3B5017", "#567522", "#739C30", "#91C43F", "#B0E855", "#D4F694", "#F2FCE0"] },
-      "signal-hover": { "role": "primary", "displayName": "Signal Lime Hover", "canonical": "#D5F88A", "tonalRamp": ["#27320F", "#405319", "#5D7925", "#7DA132", "#9DCB44", "#BDEF60", "#DCF9A7", "#F4FDE4"] },
-      "healthy": { "role": "secondary", "displayName": "Healthy Mint", "canonical": "#68D7A7", "tonalRamp": ["#0D2B20", "#164736", "#20664E", "#2E8768", "#43AA84", "#68D7A7", "#A3E9CD", "#E2F9F0"] },
+      "muted": { "role": "neutral", "displayName": "Telemetry Gray", "canonical": "#9AA3BD", "tonalRamp": ["#18201C", "#29352F", "#3D4C45", "#58685F", "#75867D", "#9AA3BD", "#BCC6C1", "#EEF1EF"] },
+      "signal": { "role": "primary", "displayName": "Signal Violet", "canonical": "#8B7CFF", "tonalRamp": ["#24300E", "#3B5017", "#567522", "#739C30", "#91C43F", "#B0E855", "#D4F694", "#F2FCE0"] },
+      "signal-hover": { "role": "primary", "displayName": "Signal Violet Hover", "canonical": "#A99FFF", "tonalRamp": ["#27320F", "#405319", "#5D7925", "#7DA132", "#9DCB44", "#BDEF60", "#DCF9A7", "#F4FDE4"] },
+      "healthy": { "role": "secondary", "displayName": "Healthy Mint", "canonical": "#52D3B0", "tonalRamp": ["#0D2B20", "#164736", "#20664E", "#2E8768", "#43AA84", "#52D3B0", "#A3E9CD", "#E2F9F0"] },
       "warning": { "role": "tertiary", "displayName": "Service Amber", "canonical": "#F0A45D", "tonalRamp": ["#331B0B", "#542E12", "#794419", "#A25D24", "#CA7835", "#F0A45D", "#F6C79B", "#FCEADB"] },
       "danger": { "role": "tertiary", "displayName": "Fault Coral", "canonical": "#F27368", "tonalRamp": ["#35100E", "#571B18", "#7D2924", "#A83A34", "#CF5048", "#F27368", "#F7AAA3", "#FCE3E0"] }
     },
@@ -26,8 +26,8 @@
       "numeric": { "displayName": "Instrument Numeric", "purpose": "LTR-isolated counts, usage, dates, URLs, and technical identifiers." }
     },
     "shadows": [
-      { "name": "signal-ambient", "value": "0 8px 24px rgba(198,243,106,.12)", "purpose": "Compact primary actions and brand signal elements." },
-      { "name": "active-route-ambient", "value": "0 10px 28px rgba(198,243,106,.10)", "purpose": "Selected desktop navigation." },
+      { "name": "signal-ambient", "value": "0 8px 24px rgba(139,124,255,.20)", "purpose": "Compact primary actions and brand signal elements." },
+      { "name": "active-route-ambient", "value": "0 10px 28px rgba(139,124,255,.18)", "purpose": "Selected desktop navigation." },
       { "name": "surface-ambient", "value": "0 18px 50px rgba(0,0,0,.16)", "purpose": "Operational cards and containers." },
       { "name": "login-enclosure", "value": "0 35px 100px rgba(0,0,0,.38)", "purpose": "Authentication composition only." }
     ],
@@ -35,7 +35,7 @@
       { "name": "page-resolve", "value": "420ms cubic-bezier(.16,1,.3,1)", "purpose": "Resolve route content from slight blur, opacity, and 7px vertical offset." },
       { "name": "toast-in", "value": "180ms ease-out", "purpose": "Short status notification entrance." },
       { "name": "sheet-in", "value": "220ms ease-out", "purpose": "Mobile bottom-sheet entrance." },
-      { "name": "skeleton-signal", "value": "1350ms ease-in-out infinite", "purpose": "Subtle traveling lime loading signal; disabled for reduced motion." }
+      { "name": "skeleton-signal", "value": "1350ms ease-in-out infinite", "purpose": "Subtle traveling violet loading signal; disabled for reduced motion." }
     ],
     "breakpoints": [
       { "name": "sm", "value": "640px" },
@@ -50,7 +50,7 @@
       "refersTo": "button-primary",
       "description": "The scarce, high-visibility action for the primary next step.",
       "html": "<button class=\"ds-btn-primary\">ثبت تغییرات</button>",
-      "css": ".ds-btn-primary{min-height:40px;padding:10px 16px;border:0;border-radius:10px;background:#C6F36A;color:#0D1210;font:600 14px/1.5 Vazirmatn,system-ui,sans-serif;box-shadow:0 8px 24px rgba(198,243,106,.12);transition:background-color .2s,transform .2s;cursor:pointer}.ds-btn-primary:hover{background:#D5F88A}.ds-btn-primary:active{transform:scale(.98)}.ds-btn-primary:focus-visible{outline:2px solid #C6F36A;outline-offset:3px}"
+      "css": ".ds-btn-primary{min-height:40px;padding:10px 16px;border:0;border-radius:10px;background:#8B7CFF;color:#0B0E19;font:600 14px/1.5 Vazirmatn,system-ui,sans-serif;box-shadow:0 8px 24px rgba(139,124,255,.20);transition:background-color .2s,transform .2s;cursor:pointer}.ds-btn-primary:hover{background:#A99FFF}.ds-btn-primary:active{transform:scale(.98)}.ds-btn-primary:focus-visible{outline:2px solid #8B7CFF;outline-offset:3px}"
     },
     {
       "name": "Ghost Button",
@@ -58,7 +58,7 @@
       "refersTo": "button-ghost",
       "description": "A secondary operational action that remains subordinate to the signal button.",
       "html": "<button class=\"ds-btn-ghost\">بررسی اتصال</button>",
-      "css": ".ds-btn-ghost{min-height:40px;padding:10px 16px;border:1px solid #2B3932;border-radius:10px;background:#19231E;color:#F1F4EF;font:600 14px/1.5 Vazirmatn,system-ui,sans-serif;transition:background-color .2s,border-color .2s,transform .2s;cursor:pointer}.ds-btn-ghost:hover{background:#202C26;border-color:rgba(149,164,157,.6)}.ds-btn-ghost:active{transform:scale(.98)}.ds-btn-ghost:focus-visible{outline:2px solid #C6F36A;outline-offset:3px}"
+      "css": ".ds-btn-ghost{min-height:40px;padding:10px 16px;border:1px solid #2A3150;border-radius:10px;background:#181D33;color:#F1F4EF;font:600 14px/1.5 Vazirmatn,system-ui,sans-serif;transition:background-color .2s,border-color .2s,transform .2s;cursor:pointer}.ds-btn-ghost:hover{background:#202C26;border-color:rgba(149,164,157,.6)}.ds-btn-ghost:active{transform:scale(.98)}.ds-btn-ghost:focus-visible{outline:2px solid #8B7CFF;outline-offset:3px}"
     },
     {
       "name": "Text Input",
@@ -66,7 +66,7 @@
       "refersTo": "input",
       "description": "A dark inset Persian field with an explicit lime focus state.",
       "html": "<label class=\"ds-field-label\">نام کاربری<input class=\"ds-input\" placeholder=\"نام کاربری\"></label>",
-      "css": ".ds-field-label{display:grid;gap:8px;color:#95A49D;font:400 12px/1.5 Vazirmatn,system-ui,sans-serif;direction:rtl}.ds-input{width:100%;padding:10px 14px;border:1px solid #2B3932;border-radius:10px;background:#0F1613;color:#F1F4EF;font:400 16px/1.5 Vazirmatn,system-ui,sans-serif;transition:border-color .2s,box-shadow .2s}.ds-input::placeholder{color:#95A49D}.ds-input:hover{border-color:rgba(149,164,157,.6)}.ds-input:focus{outline:none;border-color:#C6F36A;box-shadow:0 0 0 2px rgba(198,243,106,.15)}.ds-input:focus-visible{outline:2px solid #C6F36A;outline-offset:3px}"
+      "css": ".ds-field-label{display:grid;gap:8px;color:#9AA3BD;font:400 12px/1.5 Vazirmatn,system-ui,sans-serif;direction:rtl}.ds-input{width:100%;padding:10px 14px;border:1px solid #2A3150;border-radius:10px;background:#0E1222;color:#F1F4EF;font:400 16px/1.5 Vazirmatn,system-ui,sans-serif;transition:border-color .2s,box-shadow .2s}.ds-input::placeholder{color:#9AA3BD}.ds-input:hover{border-color:rgba(149,164,157,.6)}.ds-input:focus{outline:none;border-color:#8B7CFF;box-shadow:0 0 0 2px rgba(139,124,255,.20)}.ds-input:focus-visible{outline:2px solid #8B7CFF;outline-offset:3px}"
     },
     {
       "name": "Operational Card",
@@ -74,7 +74,7 @@
       "refersTo": "card",
       "description": "The standard matte instrument surface for metrics, lists, and attention queues.",
       "html": "<section class=\"ds-card\" dir=\"rtl\"><p class=\"ds-card-label\">نیازمند رسیدگی</p><strong class=\"ds-card-value\">۳</strong></section>",
-      "css": ".ds-card{position:relative;overflow:hidden;padding:20px;border:1px solid #2B3932;border-radius:14px;background:linear-gradient(145deg,rgba(25,35,30,.96),rgba(16,23,20,.98));color:#F1F4EF;box-shadow:0 18px 50px rgba(0,0,0,.16);font-family:Vazirmatn,system-ui,sans-serif}.ds-card:before{content:\"\";position:absolute;inset-inline:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(198,243,106,.34),transparent)}.ds-card-label{margin:0;color:#95A49D;font-size:12px}.ds-card-value{display:block;margin-top:20px;color:#F0A45D;font:600 24px/1.2 'JetBrains Mono',ui-monospace,monospace;direction:ltr;text-align:right}.ds-card:hover{border-color:#34453C}.ds-card:focus-within{outline:2px solid #C6F36A;outline-offset:3px}"
+      "css": ".ds-card{position:relative;overflow:hidden;padding:20px;border:1px solid #2A3150;border-radius:14px;background:linear-gradient(145deg,rgba(25,35,30,.96),rgba(16,23,20,.98));color:#F1F4EF;box-shadow:0 18px 50px rgba(0,0,0,.16);font-family:Vazirmatn,system-ui,sans-serif}.ds-card:before{content:\"\";position:absolute;inset-inline:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(139,124,255,.42),transparent)}.ds-card-label{margin:0;color:#9AA3BD;font-size:12px}.ds-card-value{display:block;margin-top:20px;color:#F0A45D;font:600 24px/1.2 'JetBrains Mono',ui-monospace,monospace;direction:ltr;text-align:right}.ds-card:hover{border-color:#343B60}.ds-card:focus-within{outline:2px solid #8B7CFF;outline-offset:3px}"
     },
     {
       "name": "Status Chip",
@@ -82,26 +82,26 @@
       "refersTo": "status-chip",
       "description": "A compact state label whose tint, border, and text reinforce the same semantic tone.",
       "html": "<span class=\"ds-chip-healthy\">فعال</span>",
-      "css": ".ds-chip-healthy{display:inline-flex;padding:2px 8px;border:1px solid rgba(104,215,167,.3);border-radius:9999px;background:rgba(104,215,167,.1);color:#68D7A7;font:500 11px/1.5 Vazirmatn,system-ui,sans-serif}.ds-chip-healthy:hover{background:rgba(104,215,167,.16)}.ds-chip-healthy:focus-visible{outline:2px solid #C6F36A;outline-offset:3px}"
+      "css": ".ds-chip-healthy{display:inline-flex;padding:2px 8px;border:1px solid rgba(104,215,167,.3);border-radius:9999px;background:rgba(104,215,167,.1);color:#52D3B0;font:500 11px/1.5 Vazirmatn,system-ui,sans-serif}.ds-chip-healthy:hover{background:rgba(104,215,167,.16)}.ds-chip-healthy:focus-visible{outline:2px solid #8B7CFF;outline-offset:3px}"
     },
     {
       "name": "Desktop Navigation Item",
       "kind": "nav",
-      "description": "A right-rail route; the active item becomes the single solid lime navigation signal.",
+      "description": "A right-rail route; the active item becomes the single solid violet navigation signal.",
       "html": "<nav class=\"ds-nav\" dir=\"rtl\"><a class=\"ds-nav-item ds-nav-active\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\" fill=\"none\" aria-hidden=\"true\"><path d=\"M3 4h12M3 9h8M3 14h10\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><circle cx=\"14\" cy=\"9\" r=\"1.5\" fill=\"currentColor\"/></svg>نمای کلی</a><a class=\"ds-nav-item\" href=\"#\">سرورها</a></nav>",
-      "css": ".ds-nav{display:grid;gap:6px;width:240px;padding:12px;background:#101713;font-family:Vazirmatn,system-ui,sans-serif}.ds-nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;color:#95A49D;text-decoration:none;font-size:14px;transition:background-color .2s,color .2s}.ds-nav-item:hover{background:#19231E;color:#F1F4EF}.ds-nav-item:focus-visible{outline:2px solid #C6F36A;outline-offset:3px}.ds-nav-active{background:#C6F36A;color:#0D1210;font-weight:600;box-shadow:0 10px 28px rgba(198,243,106,.10)}.ds-nav-active:hover{background:#D5F88A;color:#0D1210}"
+      "css": ".ds-nav{display:grid;gap:6px;width:240px;padding:12px;background:#101322;font-family:Vazirmatn,system-ui,sans-serif}.ds-nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;color:#9AA3BD;text-decoration:none;font-size:14px;transition:background-color .2s,color .2s}.ds-nav-item:hover{background:#181D33;color:#F1F4EF}.ds-nav-item:focus-visible{outline:2px solid #8B7CFF;outline-offset:3px}.ds-nav-active{background:#8B7CFF;color:#0B0E19;font-weight:600;box-shadow:0 10px 28px rgba(139,124,255,.18)}.ds-nav-active:hover{background:#A99FFF;color:#0B0E19}"
     },
     {
       "name": "Signal Gauge",
       "kind": "custom",
       "description": "The signature segmented usage readout modeled after network equipment telemetry.",
       "html": "<div class=\"ds-gauge\" dir=\"rtl\"><div class=\"ds-gauge-track\"><i></i><i></i><i></i><i></i><i></i><i></i><i class=\"ds-empty\"></i><i class=\"ds-empty\"></i></div><div class=\"ds-gauge-meta\"><span>۱۲ GB</span><span>۱۶ GB</span></div></div>",
-      "css": ".ds-gauge{width:320px;font-family:'JetBrains Mono',ui-monospace,monospace}.ds-gauge-track{display:flex;gap:3px}.ds-gauge-track i{height:10px;flex:1;border-radius:2px;background:#68D7A7;transition:filter .2s}.ds-gauge-track .ds-empty{background:#2B3932}.ds-gauge:hover i:not(.ds-empty){filter:brightness(1.12)}.ds-gauge:focus-within{outline:2px solid #C6F36A;outline-offset:3px}.ds-gauge-meta{display:flex;justify-content:space-between;margin-top:6px;color:#F1F4EF;font-size:12px;direction:ltr}.ds-gauge-meta span:last-child{color:#95A49D}"
+      "css": ".ds-gauge{width:320px;font-family:'JetBrains Mono',ui-monospace,monospace}.ds-gauge-track{display:flex;gap:3px}.ds-gauge-track i{height:10px;flex:1;border-radius:2px;background:#52D3B0;transition:filter .2s}.ds-gauge-track .ds-empty{background:#2A3150}.ds-gauge:hover i:not(.ds-empty){filter:brightness(1.12)}.ds-gauge:focus-within{outline:2px solid #8B7CFF;outline-offset:3px}.ds-gauge-meta{display:flex;justify-content:space-between;margin-top:6px;color:#F1F4EF;font-size:12px;direction:ltr}.ds-gauge-meta span:last-child{color:#9AA3BD}"
     }
   ],
   "narrative": {
     "northStar": "NOC Shift Board",
-    "overview": "Panel is a matte green-black operations instrument: dense enough for a working shift, calm enough to leave open all day, and explicit about what needs intervention. Its visual hierarchy begins with exceptions and live state, then exposes supporting inventory and metrics without turning the dashboard into a decorative analytics canvas.\n\nThe system is code-led and deliberately avoids an AI-created feel. Repeated primitives, fine seams, disciplined Persian RTL typography, tabular numeric readouts, and restrained ambient depth give it the character of dependable network equipment rather than a generic gradient dashboard. Sharp lime is rare and operational: it marks the current route, primary action, focus, or a meaningful signal.",
+    "overview": "Panel is a matte blue-black operations instrument: dense enough for a working shift, calm enough to leave open all day, and explicit about what needs intervention. Its visual hierarchy begins with exceptions and live state, then exposes supporting inventory and metrics without turning the dashboard into a decorative analytics canvas.\n\nThe system is code-led and deliberately avoids an AI-created feel. Repeated primitives, fine seams, disciplined Persian RTL typography, tabular numeric readouts, and restrained ambient depth give it the character of dependable network equipment rather than a generic gradient dashboard. Electric violet is rare and operational: it marks the current route, primary action, focus, or a meaningful signal.",
     "keyCharacteristics": [
       "Matte green-black instrument surfaces with fine structural seams.",
       "Exception-first operational hierarchy and compact, scannable density.",
@@ -110,7 +110,7 @@
       "Restrained ambient depth and a short page-resolve motion on navigation."
     ],
     "rules": [
-      { "name": "The Rare Signal Rule", "body": "Signal Lime is reserved for action, focus, active location, and meaningful live emphasis; it is not a decorative wash.", "section": "colors" },
+      { "name": "The Rare Signal Rule", "body": "Signal Violet is reserved for action, focus, active location, and meaningful live emphasis; it is not a decorative wash.", "section": "colors" },
       { "name": "The State Has Meaning Rule", "body": "Mint means healthy, amber means attention, and coral means failure or danger. Never swap these roles for variety.", "section": "colors" },
       { "name": "The RTL Prose, LTR Telemetry Rule", "body": "Persian language and layout stay RTL; numbers, URLs, dates, and machine identifiers use isolated LTR mono runs.", "section": "typography" },
       { "name": "The Weight Before Size Rule", "body": "Establish hierarchy primarily with weight, tone, and spacing; reserve oversized type for login and top-level status.", "section": "typography" },
@@ -120,13 +120,13 @@
       "Do lead working screens with live state, exceptions, and retry paths.",
       "Do preserve Persian RTL alignment while isolating technical telemetry as LTR mono text.",
       "Do use Fine Seam borders and tonal steps as the default structure.",
-      "Do keep Signal Lime rare enough that active routes, focus, links, and primary actions remain unmistakable.",
+      "Do keep Signal Violet rare enough that active routes, focus, links, and primary actions remain unmistakable.",
       "Do pair every color-coded state with readable text, labels, or accessible names.",
       "Do honor reduced motion and maintain visible keyboard focus."
     ],
     "donts": [
       "Don't introduce glossy gradients, neon bloom, glass-card stacks, oversized metric art, or decorative dashboard chrome.",
-      "Don't spread Signal Lime across passive backgrounds or use semantic state colors interchangeably.",
+      "Don't spread Signal Violet across passive backgrounds or use semantic state colors interchangeably.",
       "Don't center operational prose or force RTL numbers and URLs into visually unstable runs.",
       "Don't hide errors in transient notifications alone; preserve contextual failure and retry UI.",
       "Don't improvise unrelated radii, shadows, typefaces, or one-off card treatments.",

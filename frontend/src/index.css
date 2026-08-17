@@ -4,7 +4,7 @@
 
 html, body {
   font-family: 'Vazirmatn', system-ui, sans-serif;
-  background: #0D1210;
+  background: #0B0E19;
   color: #F1F4EF;
   min-width: 320px;
 }
@@ -18,7 +18,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: -1;
-  background: linear-gradient(155deg, rgba(198, 243, 106, .035), transparent 36%);
+  background: linear-gradient(155deg, rgba(139, 124, 255, .07), transparent 38%);
 }
 
 * {
@@ -32,22 +32,22 @@ body::before {
 }
 
 ::selection {
-  color: #0D1210;
-  background: #C6F36A;
+  color: #0B0E19;
+  background: #A99FFF;
 }
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-track { background: #0D1210; }
-::-webkit-scrollbar-thumb { background: #34453C; border: 2px solid #0D1210; border-radius: 8px; }
-::-webkit-scrollbar-thumb:hover { background: #4A6255; }
+::-webkit-scrollbar-track { background: #0B0E19; }
+::-webkit-scrollbar-thumb { background: #343B60; border: 2px solid #0B0E19; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #4B5684; }
 
-:focus-visible { outline: 2px solid #C6F36A; outline-offset: 3px; }
+:focus-visible { outline: 2px solid #A99FFF; outline-offset: 3px; }
 a { text-underline-offset: 4px; }
-input, select, button { caret-color: #C6F36A; }
+input, select, button { caret-color: #A99FFF; }
 
 .ops-surface {
   position: relative;
-  background: linear-gradient(145deg, rgba(25,35,30,.96), rgba(16,23,20,.98));
+  background: linear-gradient(145deg, rgba(24,29,51,.97), rgba(15,18,34,.99));
 }
 .ops-surface::after {
   content: "";
@@ -55,7 +55,7 @@ input, select, button { caret-color: #C6F36A; }
   inset-inline: 0;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(198,243,106,.34), transparent);
+  background: linear-gradient(90deg, transparent, rgba(139,124,255,.42), transparent);
   pointer-events: none;
 }
 
@@ -68,14 +68,14 @@ input, select, button { caret-color: #C6F36A; }
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: #1B2721;
+  background: #1A2038;
 }
 .skeleton::after {
   content: "";
   position: absolute;
   inset: 0;
   transform: translateX(-110%);
-  background: linear-gradient(90deg, transparent, rgba(198, 243, 106, 0.09), transparent);
+  background: linear-gradient(90deg, transparent, rgba(139, 124, 255, 0.12), transparent);
   animation: skeleton-signal 1.35s ease-in-out infinite;
 }
 @keyframes skeleton-signal { to { transform: translateX(110%); } }

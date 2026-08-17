@@ -15,7 +15,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-ink text-white">
-      <aside className="hidden md:flex w-[17.5rem] shrink-0 border-l border-line bg-[#101713] flex-col sticky top-0 h-screen">
+      <aside className="hidden md:flex w-[17.5rem] shrink-0 border-l border-line bg-[#101322] flex-col sticky top-0 h-screen">
         <Brand />
         <div className="px-5 pt-5 pb-2 flex items-center justify-between text-[11px] text-muted">
           <span>مرکز عملیات</span>
@@ -24,13 +24,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex-1 px-3 py-2 space-y-1.5">
           {nav.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) =>
-              `group flex items-center gap-3 px-3.5 py-3 rounded-[10px] text-sm transition-all ${isActive ? "bg-signal text-ink font-semibold shadow-[0_10px_28px_rgba(198,243,106,.1)]" : "text-muted hover:text-white hover:bg-panel2"}`
+              `group flex items-center gap-3 px-3.5 py-3 rounded-[10px] text-sm transition-all ${isActive ? "bg-signal text-ink font-semibold shadow-[0_10px_28px_rgba(139,124,255,.18)]" : "text-muted hover:text-white hover:bg-panel2"}`
             }>
               <item.icon />{item.label}
             </NavLink>
           ))}
         </nav>
-        <div className="mx-3 mb-3 px-3 py-3 border border-line rounded-[12px] bg-[#0D1210]">
+        <div className="mx-3 mb-3 px-3 py-3 border border-line rounded-[12px] bg-[#0B0E19]">
           <p className="text-[11px] text-muted mb-2">نشست مدیریت</p>
           <button onClick={logout} className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-muted hover:text-danger hover:bg-danger/10 transition-colors">
             <LogoutIcon />خروج از حساب
@@ -38,7 +38,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-[#101713]/95 backdrop-blur-md border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <header className="md:hidden fixed top-0 inset-x-0 z-40 bg-[#101322]/95 backdrop-blur-md border-b border-line" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="h-14 flex items-center justify-between px-4">
           <BrandCompact />
           <button onClick={logout} aria-label="خروج از حساب" className="h-10 w-10 flex items-center justify-center rounded-lg text-muted hover:text-danger hover:bg-danger/10 active:scale-95 transition"><LogoutIcon /></button>
@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="page-enter max-w-[88rem] mx-auto px-4 py-6 pt-[calc(4.5rem+env(safe-area-inset-top))] pb-24 md:px-10 md:py-9 md:pt-9 md:pb-12">{children}</div>
       </main>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#101713]/95 backdrop-blur-md border-t border-line flex" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#101322]/95 backdrop-blur-md border-t border-line flex" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {nav.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) => `flex-1 flex flex-col items-center gap-1 min-h-[60px] justify-center text-[11px] transition-colors ${isActive ? "text-signal" : "text-muted"}`}>
             {({ isActive }) => <><span className={`flex items-center justify-center rounded-full px-3 py-0.5 transition-colors ${isActive ? "bg-signal/10" : ""}`}><item.icon /></span>{item.label}</>}
@@ -66,7 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
 function Brand() {
   return <div className="px-5 py-[1.15rem] border-b border-line"><div className="flex items-center gap-3">
-    <div className="relative h-9 w-9 rounded-[10px] bg-signal flex items-center justify-center text-ink shadow-[0_8px_24px_rgba(198,243,106,.12)]"><SignalMark /><span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-mint border-2 border-[#101713]" /></div>
+    <div className="relative h-9 w-9 rounded-[10px] bg-signal flex items-center justify-center text-ink shadow-[0_8px_24px_rgba(139,124,255,.2)]"><SignalMark /><span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-mint border-2 border-[#101322]" /></div>
     <div><p className="font-bold text-base leading-none">Panel</p><p className="text-[11px] text-muted mt-1.5">کنترل یکپارچه فروش</p></div>
   </div></div>;
 }

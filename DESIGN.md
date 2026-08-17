@@ -2,16 +2,16 @@
 name: Panel
 description: A Persian RTL network-operations shift board for VPN reseller teams.
 colors:
-  ink: "#0D1210"
-  panel: "#131A17"
-  panel-raised: "#19231E"
-  field: "#0F1613"
-  seam: "#2B3932"
+  ink: "#0B0E19"
+  panel: "#111425"
+  panel-raised: "#181D33"
+  field: "#0E1222"
+  seam: "#2A3150"
   text: "#F1F4EF"
-  muted: "#95A49D"
-  signal: "#C6F36A"
-  signal-hover: "#D5F88A"
-  healthy: "#68D7A7"
+  muted: "#9AA3BD"
+  signal: "#8B7CFF"
+  signal-hover: "#A99FFF"
+  healthy: "#52D3B0"
   warning: "#F0A45D"
   danger: "#F27368"
 typography:
@@ -102,9 +102,9 @@ components:
 
 **Creative North Star: "NOC Shift Board"**
 
-Panel is a matte green-black operations instrument: dense enough for a working shift, calm enough to leave open all day, and explicit about what needs intervention. Its visual hierarchy begins with exceptions and live state, then exposes supporting inventory and metrics without turning the dashboard into a decorative analytics canvas.
+Panel is a matte blue-black operations instrument: dense enough for a working shift, calm enough to leave open all day, and explicit about what needs intervention. Its visual hierarchy begins with exceptions and live state, then exposes supporting inventory and metrics without turning the dashboard into a decorative analytics canvas.
 
-The system is code-led and deliberately avoids an AI-created feel. Repeated primitives, fine seams, disciplined Persian RTL typography, tabular numeric readouts, and restrained ambient depth give it the character of dependable network equipment rather than a generic gradient dashboard. Sharp lime is rare and operational: it marks the current route, primary action, focus, or a meaningful signal.
+The system is code-led and deliberately avoids an AI-created feel. Repeated primitives, fine seams, disciplined Persian RTL typography, tabular numeric readouts, and restrained ambient depth give it the character of dependable network equipment rather than a generic gradient dashboard. Electric violet is rare and operational: it marks the current route, primary action, focus, or a meaningful signal.
 
 **Key Characteristics:**
 
@@ -116,11 +116,11 @@ The system is code-led and deliberately avoids an AI-created feel. Repeated prim
 
 ## Colors
 
-The palette is a low-reflectance equipment rack with one high-visibility signal and unambiguous semantic states.
+The palette is a low-reflectance blue-black equipment rack with one high-visibility signal and unambiguous semantic states.
 
 ### Primary
 
-- **Signal Lime:** The scarce high-contrast voice for primary actions, active navigation, links, focus outlines, selection, and signal highlights.
+- **Signal Violet:** The scarce high-contrast voice for primary actions, active navigation, links, focus outlines, selection, and signal highlights.
 
 ### Secondary
 
@@ -139,7 +139,7 @@ The palette is a low-reflectance equipment rack with one high-visibility signal 
 
 ### Named Rules
 
-**The Rare Signal Rule.** Signal Lime is reserved for action, focus, active location, and meaningful live emphasis; it is not a decorative wash.
+**The Rare Signal Rule.** Signal Violet is reserved for action, focus, active location, and meaningful live emphasis; it is not a decorative wash.
 
 **The State Has Meaning Rule.** Mint means healthy, amber means attention, and coral means failure or danger. Never swap these roles for variety.
 
@@ -182,8 +182,8 @@ Depth is mostly tonal and structural. Cards use a diagonal dark surface gradient
 
 ### Shadow Vocabulary
 
-- **Signal Ambient** (`0 8px 24px rgba(198,243,106,.12)`): Primary buttons, brand mark, and other compact active signal elements.
-- **Active Route Ambient** (`0 10px 28px rgba(198,243,106,.10)`): Selected desktop navigation only.
+- **Signal Ambient** (`0 8px 24px rgba(139,124,255,.20)`): Primary buttons, brand mark, and other compact active signal elements.
+- **Active Route Ambient** (`0 10px 28px rgba(139,124,255,.18)`): Selected desktop navigation only.
 - **Surface Ambient** (`0 18px 50px rgba(0,0,0,.16)`): Standard cards and operational containers.
 - **Login Enclosure** (`0 35px 100px rgba(0,0,0,.38)`): The isolated authentication composition.
 
@@ -200,15 +200,15 @@ The form language is precise but not severe. Controls use a consistent 10px corn
 ### Buttons
 
 - **Shape:** Compact, assured controls with a 10px radius and 40px minimum height.
-- **Primary:** Signal Lime on Rack Ink, semibold, with a restrained lime ambient shadow.
-- **Hover / Focus:** Brighten to Signal Lime Hover; use the global 2px Signal Lime focus outline with 3px offset. Active state scales to 98%.
+- **Primary:** Signal Violet on Rack Ink, semibold, with a restrained lime ambient shadow.
+- **Hover / Focus:** Brighten to Signal Violet Hover; use the global 2px Signal Violet focus outline with 3px offset. Active state scales to 98%.
 - **Ghost:** Raised Instrument with Fine Seam border; hover raises the tonal surface and softens the seam toward Telemetry Gray.
 - **Danger:** A translucent Fault Coral surface and border; deepen the tint on hover.
 
 ### Chips
 
 - **Style:** Compact 11px labels, 2px by 8px padding, pill silhouette, and a translucent semantic tint with matching border.
-- **State:** Health, warning, danger, and inactive states retain their semantic color assignments; selectable server chips use a restrained Signal Lime tint.
+- **State:** Health, warning, danger, and inactive states retain their semantic color assignments; selectable server chips use a restrained Signal Violet tint.
 
 ### Cards / Containers
 
@@ -221,20 +221,20 @@ The form language is precise but not severe. Controls use a consistent 10px corn
 ### Inputs / Fields
 
 - **Style:** Dark inset field, Fine Seam border, 10px radius, 14px horizontal padding, and 16px mobile text to prevent iOS focus zoom.
-- **Focus:** Signal Lime border plus a soft two-pixel lime ring and the global visible outline.
+- **Focus:** Signal Violet border plus a soft two-pixel lime ring and the global visible outline.
 - **Error / Disabled:** Errors use Fault Coral text and translucent surface/border; disabled actions retain shape and drop to 50% opacity.
 
 ### Navigation
 
-Desktop navigation occupies the fixed right rail with icon-and-label rows. The active route becomes a solid Signal Lime instrument tab; inactive routes remain muted and lift tonally on hover. Mobile uses fixed top and bottom bars with translucent rack surfaces, backdrop blur, safe-area padding, and an active lime icon/label treatment rather than a filled tab.
+Desktop navigation occupies the fixed right rail with icon-and-label rows. The active route becomes a solid Signal Violet instrument tab; inactive routes remain muted and lift tonally on hover. Mobile uses fixed top and bottom bars with translucent rack surfaces, backdrop blur, safe-area padding, and an active lime icon/label treatment rather than a filled tab.
 
 ### Signal Gauge
 
-The signature usage/time gauge is a 24-segment hardware-style readout. Filled segments take the selected semantic tone, empty segments use Fine Seam, unlimited state uses a subdued lime signal, and usage above 90% overrides the gauge to Fault Coral.
+The signature usage/time gauge is a 24-segment hardware-style readout. Filled segments take the selected semantic tone, empty segments use Fine Seam, unlimited state uses a subdued violet signal, and usage above 90% overrides the gauge to Fault Coral.
 
 ### Loading, Error, and Retry Regions
 
-Skeletons use a Raised Instrument base with a narrow traveling lime signal. Loading containers expose live status semantics; failures remain in context and present a visible Signal Lime retry action instead of collapsing the surrounding card.
+Skeletons use a Raised Instrument base with a narrow traveling violet signal. Loading containers expose live status semantics; failures remain in context and present a visible Signal Violet retry action instead of collapsing the surrounding card.
 
 ### Motion
 
@@ -247,14 +247,14 @@ Route content resolves over 420ms with a 7px rise, blur reduction, and `cubic-be
 - **Do** lead working screens with live state, exceptions, and retry paths.
 - **Do** preserve Persian RTL alignment while isolating technical telemetry as LTR mono text.
 - **Do** use Fine Seam borders and tonal steps as the default structure.
-- **Do** keep Signal Lime rare enough that active routes, focus, links, and primary actions remain unmistakable.
+- **Do** keep Signal Violet rare enough that active routes, focus, links, and primary actions remain unmistakable.
 - **Do** pair every color-coded state with readable text, labels, or accessible names.
 - **Do** honor reduced motion and maintain visible keyboard focus.
 
 ### Don't:
 
 - **Don't** introduce glossy gradients, neon bloom, glass-card stacks, oversized metric art, or decorative dashboard chrome.
-- **Don't** spread Signal Lime across passive backgrounds or use semantic state colors interchangeably.
+- **Don't** spread Signal Violet across passive backgrounds or use semantic state colors interchangeably.
 - **Don't** center operational prose or force RTL numbers and URLs into visually unstable runs.
 - **Don't** hide errors in transient notifications alone; preserve contextual failure and retry UI.
 - **Don't** improvise unrelated radii, shadows, typefaces, or one-off card treatments.

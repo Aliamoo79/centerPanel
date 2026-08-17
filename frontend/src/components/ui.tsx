@@ -40,8 +40,8 @@ export function Button({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "danger" }) {
   const base = "min-h-10 px-4 py-2.5 rounded-[10px] text-sm font-semibold transition-[background-color,color,border-color,transform] disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
   const styles = {
-    primary: "bg-signal text-ink hover:bg-[#D5F88A] shadow-[0_8px_24px_rgba(198,243,106,.12)]",
-    ghost: "bg-panel2 border border-line text-white hover:border-muted/60 hover:bg-[#202C26]",
+    primary: "bg-signal text-ink hover:bg-[#A99FFF] shadow-[0_8px_24px_rgba(139,124,255,.2)]",
+    ghost: "bg-panel2 border border-line text-white hover:border-muted/60 hover:bg-[#202642]",
     danger: "bg-danger/10 border border-danger/40 text-danger hover:bg-danger/20",
   }[variant];
   return (
@@ -56,7 +56,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       // text-[16px] on mobile prevents iOS from auto-zooming on focus
-      className={`w-full bg-[#0F1613] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white placeholder:text-muted focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 transition ${props.className ?? ""}`}
+      className={`w-full bg-[#0E1222] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white placeholder:text-muted focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/20 transition ${props.className ?? ""}`}
     />
   );
 }
@@ -65,7 +65,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full bg-[#0F1613] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 transition ${props.className ?? ""}`}
+      className={`w-full bg-[#0E1222] border border-line rounded-[10px] px-3.5 py-2.5 text-[16px] sm:text-sm text-white focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/20 transition ${props.className ?? ""}`}
     />
   );
 }

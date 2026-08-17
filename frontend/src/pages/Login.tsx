@@ -19,9 +19,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-ink px-4 py-8 flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-70" style={{ background: "linear-gradient(120deg, transparent 55%, rgba(198,243,106,.055) 55%)" }} />
+      <div className="absolute inset-0 pointer-events-none opacity-80" style={{ background: "linear-gradient(120deg, transparent 55%, rgba(139,124,255,.09) 55%)" }} />
       <div className="relative w-full max-w-5xl grid lg:grid-cols-[1.2fr_.8fr] border border-line rounded-2xl overflow-hidden shadow-[0_35px_100px_rgba(0,0,0,.38)]">
-        <section className="hidden lg:flex min-h-[610px] p-12 bg-[#101713] flex-col justify-between border-l border-line">
+        <section className="hidden lg:flex min-h-[610px] p-12 bg-[#101322] flex-col justify-between border-l border-line">
           <div className="flex items-center gap-3"><div className="h-10 w-10 rounded-[10px] bg-signal text-ink grid place-items-center font-black">P</div><div><p className="font-bold text-lg">Panel</p><p className="text-xs text-muted">مرکز عملیات تیم فروش</p></div></div>
           <div className="max-w-md">
             <div className="flex items-center gap-2 text-xs text-mint mb-5"><span className="h-2 w-2 rounded-full bg-mint" />سامانه آماده عملیات است</div>
@@ -29,7 +29,7 @@ export default function Login() {
             <p className="text-muted leading-7 mt-5">فضای کاری یکپارچه برای مدیریت سریع اشتراک‌ها و رسیدگی به مواردی که به توجه تیم نیاز دارند.</p>
           </div>
           <div className="grid grid-cols-3 gap-px bg-line border border-line rounded-xl overflow-hidden text-center">
-            {['کنترل متمرکز','وضعیت زنده','مدیریت تیمی'].map((item) => <div key={item} className="bg-[#0D1210] px-3 py-4 text-xs text-muted">{item}</div>)}
+            {['کنترل متمرکز','وضعیت زنده','مدیریت تیمی'].map((item) => <div key={item} className="bg-[#0B0E19] px-3 py-4 text-xs text-muted">{item}</div>)}
           </div>
         </section>
         <section className="bg-panel p-6 sm:p-10 lg:p-12 flex flex-col justify-center min-h-[520px]">
