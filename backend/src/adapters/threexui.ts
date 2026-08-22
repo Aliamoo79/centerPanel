@@ -333,27 +333,9 @@ export class ThreeXUIAdapter implements PanelAdapter {
   }
 
   async getConfigs(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteConfig[]> {
-    const c = await this.authedClient();
-    try {
-      const res = await c.get(`/panel/api/clients/links/${encodeURIComponent(remoteId)}`);
-      const obj = res.data?.obj;
-      const links = (Array.isArray(obj) ? obj : Array.isArray(obj?.links) ? obj.links : [])
-        .filter((link: unknown): link is string => typeof link === "string" && link.includes("://"));
-
-      if (res.data?.success !== false && links.length > 0) {
-        return links.map((uri: string) => ({
-          protocol: uri.slice(0, uri.indexOf(":")),
-          uri,
-          label: remoteId,
-        }));
-      }
-    } catch (err: any) {
-      // Only old panels lacking this endpoint use reconstruction. Authentication,
-      // server, and other API errors should remain visible instead of returning a
-      // plausible-looking but incomplete configuration.
-      if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
-    }
-
+    // The panel-wide clients/links endpoint returns every link for this client
+    // across all inbounds. Resolve the client from the selected inbound instead,
+    // so this server entry contributes only its own inbound configuration.
     const inboundId = (remoteExtra?.inboundId as number) ?? this.inboundId;
     const clientId = remoteExtra?.clientId as string | undefined;
     const inbound = await this.getInbound(inboundId, true);
