@@ -333,12 +333,44 @@ export class ThreeXUIAdapter implements PanelAdapter {
   }
 
   async getConfigs(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteConfig[]> {
-    // The panel-wide clients/links endpoint returns every link for this client
-    // across all inbounds. Resolve the client from the selected inbound instead,
-    // so this server entry contributes only its own inbound configuration.
     const inboundId = (remoteExtra?.inboundId as number) ?? this.inboundId;
     const clientId = remoteExtra?.clientId as string | undefined;
     const inbound = await this.getInbound(inboundId, true);
+
+    // The links endpoint returns every generated link for this client across
+    // all inbounds. Keep the panel-generated URI (it may contain a clean-IP or
+    // alternate hostname), but restrict it to this inbound's listening port.
+    // This prevents one CenterPanel server entry from importing links belonging
+    // to the other inbounds on the same 3x-ui panel.
+    const c = await this.authedClient();
+    try {
+      const res = await c.get(`/panel/api/clients/links/${encodeURIComponent(remoteId)}`);
+      const obj = res.data?.obj;
+      const links = (Array.isArray(obj) ? obj : Array.isArray(obj?.links) ? obj.links : [])
+        .filter((link: unknown): link is string => typeof link === "string" && link.includes("://"))
+        .filter((uri: string) => {
+          try {
+            const parsed = new URL(uri);
+            return Number(parsed.port || (parsed.protocol === "vless:" ? 443 : 0)) === Number(inbound.port);
+          } catch {
+            return false;
+          }
+        });
+
+      if (res.data?.success !== false && links.length > 0) {
+        return links.map((uri: string) => ({
+          protocol: uri.slice(0, uri.indexOf(":")),
+          uri,
+          label: remoteId,
+        }));
+      }
+    } catch (err: any) {
+      // Only old panels lacking this endpoint use reconstruction. Authentication,
+      // server, and other API errors should remain visible instead of returning
+      // a plausible-looking but incomplete configuration.
+      if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
+    }
+
     const client = clientId ? this.findClient(inbound, clientId) : inbound.clients.find((c: any) => c.email === remoteId);
     if (!client) throw new Error(`کاربر ${remoteId} روی اینباند 3x-ui پیدا نشد`);
 
