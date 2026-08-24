@@ -367,7 +367,7 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
           </Select>
         </div>
         {error && <p className="sm:col-span-2 lg:col-span-4 text-danger text-sm">{error}</p>}
-        <div className="sm:col-span-2 lg:col-span-4">
+        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-5 sm:col-span-2 lg:col-span-4 border-t border-line bg-panel/95 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving} className="w-full sm:w-auto">
             {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
           </Button>

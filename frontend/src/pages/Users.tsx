@@ -340,7 +340,7 @@ function CreateUserForm({ servers, users, onClose, onSaved }: { servers: any[]; 
         </div>
 
         {error && <p className="text-danger text-sm">{error}</p>}
-        <div className="flex gap-2 pt-1">
+        <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-5 flex gap-2 border-t border-line bg-panel/95 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving} className="flex-1 sm:flex-none">
             {saving ? "در حال ساخت..." : "ساخت کاربر"}
           </Button>

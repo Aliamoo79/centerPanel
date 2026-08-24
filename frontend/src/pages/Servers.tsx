@@ -317,7 +317,7 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
           </div>
         )}
         {error && <p className="sm:col-span-2 text-danger text-sm">{error}</p>}
-        <div className="sm:col-span-2 flex gap-2 pt-2">
+        <div className="sticky bottom-0 z-10 -mx-5 sm:-mx-5 flex gap-2 border-t border-line bg-panel/95 px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving}>
             {saving ? "در حال ذخیره..." : "ذخیره"}
           </Button>
