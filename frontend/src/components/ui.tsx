@@ -157,8 +157,7 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
-        className="relative w-full sm:max-w-lg bg-panel border-t sm:border border-line rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92dvh] overflow-y-auto animate-sheet-in"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="relative flex h-[92dvh] w-full flex-col overflow-hidden bg-panel border-t sm:h-auto sm:max-h-[92dvh] sm:max-w-lg sm:border border-line rounded-t-2xl sm:rounded-2xl shadow-2xl animate-sheet-in"
         role="dialog"
         aria-modal="true"
       >
@@ -176,7 +175,9 @@ export function Modal({
             </button>
           </div>
         )}
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y pb-[max(1rem,env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
+          {children}
+        </div>
       </div>
     </div>
   );
