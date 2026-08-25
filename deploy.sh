@@ -13,7 +13,7 @@ fi
 # to explicitly select another branch (for example: GIT_BRANCH=main).
 GIT_BRANCH="${GIT_BRANCH:-$(git branch --show-current)}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
-SYSTEMD_SERVICE="${SYSTEMD_SERVICE:-centerpanel}"
+SYSTEMD_SERVICE="${SYSTEMD_SERVICE:-centerpanel2}"
 
 if [[ ! -f "$ROOT_DIR/backend/.env" ]]; then
   echo "backend/.env is missing. Run sudo bash install.sh for the first installation."

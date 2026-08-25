@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-APP_NAME="centerpanel"
+APP_NAME="centerpanel2"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$ROOT_DIR/backend/.env"
 NGINX_SITE="/etc/nginx/sites-available/$APP_NAME"
