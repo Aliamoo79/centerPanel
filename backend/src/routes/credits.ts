@@ -1,12 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
-import { requireAdmin } from "../middleware/auth";
+import { requireAdmin, requireRole } from "../middleware/auth";
 import { asyncHandler } from "../lib/asyncHandler";
 import { addCredits, getCreditAccount, GLOBAL_CREDIT_ACCOUNT_ID } from "../services/credits";
 
 export const creditsRouter = Router();
 creditsRouter.use(requireAdmin);
+creditsRouter.post("/deposit", requireRole("ADMIN"));
+creditsRouter.patch("/pricing", requireRole("ADMIN"));
 
 creditsRouter.get(
   "/",
@@ -82,4 +84,3 @@ creditsRouter.patch(
     });
   })
 );
-

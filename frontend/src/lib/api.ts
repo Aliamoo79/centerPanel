@@ -1,4 +1,5 @@
 const TOKEN_KEY = "vpn_admin_token";
+const ROLE_KEY = "vpn_admin_role";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -6,8 +7,16 @@ export function getToken(): string | null {
 export function setToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
 }
+export function setSession(token: string, role: "ADMIN" | "SELLER") {
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(ROLE_KEY, role);
+}
+export function getRole(): "ADMIN" | "SELLER" {
+  return localStorage.getItem(ROLE_KEY) === "SELLER" ? "SELLER" : "ADMIN";
+}
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(ROLE_KEY);
 }
 
 function extractErrorMessage(body: any, status: number): string {
@@ -58,7 +67,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   login: (username: string, password: string) =>
-    request<{ token: string; admin: { id: string; username: string } }>("/auth/login", {
+    request<{ token: string; admin: { id: string; username: string; role: "ADMIN" | "SELLER" } }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }),

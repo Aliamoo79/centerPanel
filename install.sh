@@ -60,6 +60,11 @@ fi
 ADMIN_USERNAME="$(ask "Initial admin username" "admin")"
 [[ "$ADMIN_USERNAME" =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "Admin username contains unsupported characters."; exit 1; }
 ADMIN_PASSWORD="$(ask_password)"
+SELLER_USERNAME="$(ask "Seller team username" "seller")"
+[[ "$SELLER_USERNAME" =~ ^[A-Za-z0-9_.-]+$ ]] || { echo "Seller username contains unsupported characters."; exit 1; }
+[[ "$SELLER_USERNAME" != "$ADMIN_USERNAME" ]] || { echo "Seller username must differ from admin username."; exit 1; }
+read -r -s -p "Seller team password: " SELLER_PASSWORD; echo >&2
+[[ -n "$SELLER_PASSWORD" ]] || { echo "Seller password is required."; exit 1; }
 BACKEND_PORT="$(ask "Private backend port" "4000")"
 [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] && (( BACKEND_PORT >= 1024 && BACKEND_PORT <= 65535 )) || {
   echo "Backend port must be between 1024 and 65535."; exit 1;
@@ -100,6 +105,8 @@ DATABASE_URL="file:./dev.db"
 JWT_SECRET="$JWT_SECRET"
 ADMIN_USERNAME="$ADMIN_USERNAME"
 ADMIN_PASSWORD="$ADMIN_PASSWORD"
+SELLER_USERNAME="$SELLER_USERNAME"
+SELLER_PASSWORD="$SELLER_PASSWORD"
 PORT=$BACKEND_PORT
 PUBLIC_BASE_URL="$PUBLIC_BASE_URL"
 USAGE_SYNC_INTERVAL_MS=$((SYNC_INTERVAL * 1000))

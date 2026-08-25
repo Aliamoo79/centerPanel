@@ -43,6 +43,7 @@ echo "[3/6] Preparing database and backend..."
   cd backend
   npx prisma generate
   npx prisma migrate deploy
+  npm run seed
   npm run build
 )
 

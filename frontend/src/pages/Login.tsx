@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, setToken } from "../lib/api";
+import { api, setSession } from "../lib/api";
 import { Button, Input } from "../components/ui";
 
 export default function Login() {
@@ -12,7 +12,7 @@ export default function Login() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(null); setLoading(true);
-    try { const { token } = await api.login(username, password); setToken(token); navigate("/"); }
+    try { const { token, admin } = await api.login(username, password); setSession(token, admin.role); navigate("/"); }
     catch (err: any) { setError(err.message ?? "ورود ناموفق بود. اطلاعات حساب را بررسی کنید."); }
     finally { setLoading(false); }
   }

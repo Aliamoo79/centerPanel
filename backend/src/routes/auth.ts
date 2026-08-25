@@ -21,7 +21,7 @@ authRouter.post(
     }
 
     logger.info("login_success", `ورود موفق ادمین: ${admin.username}`, { adminId: admin.id, ip: req.ip });
-    const token = signAdminToken({ id: admin.id, username: admin.username });
-    res.json({ token, admin: { id: admin.id, username: admin.username } });
+    const token = signAdminToken({ id: admin.id, username: admin.username, role: admin.role as "ADMIN" | "SELLER" });
+    res.json({ token, admin: { id: admin.id, username: admin.username, role: admin.role } });
   })
 );

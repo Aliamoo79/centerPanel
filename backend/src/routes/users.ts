@@ -357,6 +357,8 @@ const updateUserSchema = z.object({
   expireAt: z.string().datetime().nullable().optional(),
   ipLimit: z.number().int().positive().nullable().optional(),
   status: z.enum(["ACTIVE", "DISABLED", "EXPIRED"]).optional(),
+  planType: z.enum(["UNLIMITED_USER", "UNLIMITED_USAGE"]).nullable().optional(),
+  packageCode: z.enum(PACKAGE_CODES).nullable().optional(),
 });
 
 usersRouter.patch(
@@ -368,22 +370,49 @@ usersRouter.patch(
     const user = await prisma.user.findUnique({ where: { id: req.params.id }, include: { links: { include: { server: true } } } });
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
-    const { dataLimitGB, expireAt, ipLimit, status, note, referrerId } = parsed.data;
+    const { dataLimitGB, expireAt, ipLimit, status, note, referrerId, planType, packageCode } = parsed.data;
     if (referrerId === user.id) return res.status(400).json({ error: "A user cannot refer themselves" });
     if (referrerId) {
       const referrer = await prisma.user.findUnique({ where: { id: referrerId }, select: { id: true } });
       if (!referrer) return res.status(400).json({ error: "Referrer not found" });
     }
-    const dataLimitBytes = dataLimitGB === undefined ? undefined : dataLimitGB ? dataLimitGB * 1024 * 1024 * 1024 : null;
-    const expireDate = expireAt === undefined ? undefined : expireAt ? new Date(expireAt) : null;
+    const isSalesEdit = user.planType !== null || planType === "UNLIMITED_USER" || planType === "UNLIMITED_USAGE" || packageCode !== undefined && packageCode !== null;
+    const nextPlanType = planType === undefined ? user.planType : planType;
+    const nextPackageCode = packageCode === undefined ? user.packageCode : packageCode;
+    let nextDataLimitGB = dataLimitGB === undefined ? user.dataLimitGB : dataLimitGB;
+    let nextIpLimit = ipLimit === undefined ? user.ipLimit : ipLimit;
+    let nextExpireDate = expireAt === undefined ? user.expireAt : expireAt ? new Date(expireAt) : null;
+    let nextCreditCost = user.creditCost;
+    let creditDelta = 0;
+
+    if (isSalesEdit) {
+      if (nextPlanType === "UNLIMITED_USER") {
+        if (!nextDataLimitGB || nextDataLimitGB <= 0) throw new AppError("برای کاربر نامحدود، حجم GB الزامی است");
+        nextIpLimit = ipLimit === undefined ? null : ipLimit;
+        nextCreditCost = Math.ceil(nextDataLimitGB * (await getCreditAccount()).creditsPerGB);
+      } else if (nextPlanType === "UNLIMITED_USAGE") {
+        if (!nextPackageCode || !PACKAGE_CODES.includes(nextPackageCode as PackageCode)) throw new AppError("بسته مصرف نامحدود انتخاب نشده است");
+        const account = await getCreditAccount();
+        nextCreditCost = packagePrice(account, nextPackageCode as PackageCode);
+        if (nextCreditCost <= 0) throw new AppError("قیمت این بسته هنوز در بخش اعتبار تنظیم نشده است");
+        nextDataLimitGB = null;
+        nextIpLimit = nextPackageCode.endsWith("1U") ? 3 : 5;
+      } else {
+        throw new AppError("نوع طرح کاربر معتبر نیست");
+      }
+      creditDelta = nextCreditCost - (user.creditCost ?? 0);
+    }
+
+    const dataLimitBytes = nextDataLimitGB === undefined ? undefined : nextDataLimitGB ? nextDataLimitGB * 1024 * 1024 * 1024 : null;
+    const expireDate = nextExpireDate;
 
     // propagate limit/expiry/ip-limit/enable changes to every provisioned server
     const results = await Promise.allSettled(
       user.links.map(async (link: any) => {
         const adapter = getAdapter(link.server.panelType as any, link.server);
         const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
-        if (dataLimitBytes !== undefined || expireDate !== undefined || ipLimit !== undefined) {
-          await adapter.updateUser(link.remoteId, { dataLimitBytes, expireAt: expireDate, ipLimit }, remoteExtra);
+        if (dataLimitBytes !== undefined || expireDate !== undefined || nextIpLimit !== undefined) {
+          await adapter.updateUser(link.remoteId, { dataLimitBytes, expireAt: expireDate, ipLimit: nextIpLimit }, remoteExtra);
         }
         if (status !== undefined) {
           await adapter.setEnabled(link.remoteId, status === "ACTIVE", remoteExtra);
@@ -420,16 +449,39 @@ usersRouter.patch(
       });
     }
 
-    const updated = await prisma.user.update({
-      where: { id: req.params.id },
-      data: {
-        note,
-        ...(dataLimitBytes !== undefined ? { dataLimitGB: dataLimitBytes === null ? null : dataLimitBytes / (1024 * 1024 * 1024) } : {}),
-        ...(expireDate !== undefined ? { expireAt: expireDate } : {}),
-        ...(ipLimit !== undefined ? { ipLimit } : {}),
-        ...(status !== undefined ? { status } : {}),
-        ...(referrerId !== undefined ? { referrerId } : {}),
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      if (creditDelta > 0) {
+        const charged = await tx.creditAccount.updateMany({
+          where: { id: "global", balance: { gte: creditDelta } },
+          data: { balance: { decrement: creditDelta } },
+        });
+        if (charged.count !== 1) throw new AppError("اعتبار کافی برای این تغییر وجود ندارد");
+      } else if (creditDelta < 0) {
+        await tx.creditAccount.update({ where: { id: "global" }, data: { balance: { increment: -creditDelta } } });
+      }
+      if (creditDelta !== 0) {
+        await tx.creditTransaction.create({
+          data: {
+            amount: -creditDelta,
+            type: creditDelta > 0 ? "USER_EDIT_CHARGE" : "USER_EDIT_REFUND",
+            description: `تغییر طرح کاربر ${user.displayName}`,
+            userId: user.id,
+            accountId: "global",
+          },
+        });
+      }
+      return tx.user.update({
+        where: { id: req.params.id },
+        data: {
+          note,
+          ...(dataLimitBytes !== undefined ? { dataLimitGB: dataLimitBytes === null ? null : dataLimitBytes / (1024 * 1024 * 1024) } : {}),
+          ...(expireDate !== undefined ? { expireAt: expireDate } : {}),
+          ...(nextIpLimit !== undefined ? { ipLimit: nextIpLimit } : {}),
+          ...(status !== undefined ? { status } : {}),
+          ...(referrerId !== undefined ? { referrerId } : {}),
+          ...(isSalesEdit ? { planType: nextPlanType, packageCode: nextPlanType === "UNLIMITED_USAGE" ? nextPackageCode : null, creditCost: nextCreditCost } : {}),
+        },
+      });
     });
 
     logger.info("user_updated", `کاربر «${updated.username}» ویرایش شد`, { userId: updated.id, admin: req.admin?.username });

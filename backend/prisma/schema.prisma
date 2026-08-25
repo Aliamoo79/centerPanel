@@ -125,5 +125,6 @@ model Admin {
   id           String   @id @default(cuid())
   username     String   @unique
   passwordHash String
+  role         String   @default("ADMIN") // "ADMIN" | "SELLER"
   createdAt    DateTime @default(now())
 }

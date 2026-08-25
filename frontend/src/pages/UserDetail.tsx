@@ -366,8 +366,22 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
   const [expireAt, setExpireAt] = useState(user.expireAt ? user.expireAt.slice(0, 10) : "");
   const [ipLimit, setIpLimit] = useState(user.ipLimit?.toString() ?? "");
   const [status, setStatus] = useState(user.status);
+  const [planType, setPlanType] = useState<"" | "UNLIMITED_USER" | "UNLIMITED_USAGE">(user.planType ?? "");
+  const [packageCode, setPackageCode] = useState(user.packageCode ?? "1M_1U");
+  const [pricing, setPricing] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getCredits().then((value) => setPricing(value.pricing)).catch(() => undefined);
+  }, []);
+
+  const estimatedCost = planType === "UNLIMITED_USER"
+    ? Math.ceil(Number(dataLimitGB || 0) * Number(pricing?.creditsPerGB || 0))
+    : planType === "UNLIMITED_USAGE"
+      ? Number(pricing?.packages?.[packageCode] || 0)
+      : user.creditCost ?? 0;
+  const creditDelta = estimatedCost - (user.creditCost ?? 0);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -375,10 +389,12 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
     setError(null);
     try {
       const res = await api.updateUser(user.id, {
-        dataLimitGB: dataLimitGB ? Number(dataLimitGB) : null,
+        dataLimitGB: planType === "UNLIMITED_USAGE" ? null : dataLimitGB ? Number(dataLimitGB) : null,
         expireAt: expireAt ? new Date(expireAt).toISOString() : null,
-        ipLimit: ipLimit ? Number(ipLimit) : null,
+        ipLimit: planType === "UNLIMITED_USAGE" ? undefined : ipLimit ? Number(ipLimit) : null,
         status,
+        planType: planType || null,
+        packageCode: planType === "UNLIMITED_USAGE" ? packageCode : null,
       });
       onSaved(res.provisioningFailures);
     } catch (err: any) {
@@ -391,10 +407,27 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
   return (
     <Card className="p-4 sm:p-5">
       <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className="sm:col-span-2 lg:col-span-4">
+          <label className="block text-xs text-muted mb-1.5">Ù…ÙˆØ¯ Ø·Ø±Ø­ ÙØ±ÙˆØ´</label>
+          <Select value={planType} onChange={(e) => setPlanType(e.target.value as typeof planType)}>
+            <option value="">Ø¨Ø¯ÙˆÙ† Ø·Ø±Ø­ ÙØ±ÙˆØ´ (Ù‚Ø¯ÛŒÙ…ÛŒ)</option>
+            <option value="UNLIMITED_USER">Ú©Ø§Ø±Ø¨Ø± Ù†Ø§Ù…Ø­Ø¯ÙˆØ¯ — Ø­Ø¬Ù…ÛŒ</option>
+            <option value="UNLIMITED_USAGE">Ù…ØµØ±Ù Ù†Ø§Ù…Ø­Ø¯ÙˆØ¯ — Ø¨Ø³ØªÙ‡ Ø§Ø´ØªØ±Ø§Ú©</option>
+          </Select>
+        </div>
         <div>
           <label className="block text-xs text-muted mb-1.5">سقف مصرف (GB)</label>
           <Input type="number" value={dataLimitGB} onChange={(e) => setDataLimitGB(e.target.value)} dir="ltr" />
         </div>
+        {planType === "UNLIMITED_USAGE" && <div className="sm:col-span-2 lg:col-span-4">
+          <label className="block text-xs text-muted mb-1.5">Ø¨Ø³ØªÙ‡</label>
+          <Select value={packageCode} onChange={(e) => setPackageCode(e.target.value)}>
+            <option value="1M_1U">Û± Ù…Ø§Ù‡ / Û± Ú©Ø§Ø±Ø¨Ø± — IP 3</option>
+            <option value="1M_2U">Û± Ù…Ø§Ù‡ / Û² Ú©Ø§Ø±Ø¨Ø± — IP 5</option>
+            <option value="2M_1U">Û² Ù…Ø§Ù‡ / Û± Ú©Ø§Ø±Ø¨Ø± — IP 3</option>
+            <option value="2M_2U">Û² Ù…Ø§Ù‡ / Û² Ú©Ø§Ø±Ø¨Ø± — IP 5</option>
+          </Select>
+        </div>}
         <div>
           <label className="block text-xs text-muted mb-1.5">تاریخ انقضا</label>
           <Input type="date" value={expireAt} onChange={(e) => setExpireAt(e.target.value)} dir="ltr" />
@@ -411,6 +444,10 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
           </Select>
         </div>
         {error && <p className="sm:col-span-2 lg:col-span-4 text-danger text-sm">{error}</p>}
+        {planType && <div className="sm:col-span-2 lg:col-span-4 rounded-lg border border-line bg-panel2/60 px-3 py-2 text-xs flex flex-wrap justify-between gap-2">
+          <span className="text-muted">Ù‡Ø²ÛŒÙ†Ù‡ Ø¬Ø¯ÛŒØ¯: <span className="font-nums text-white" dir="ltr">{estimatedCost.toLocaleString("fa-IR")}</span> Ù‡Ø²Ø§Ø± ØªÙˆÙ…Ø§Ù†</span>
+          <span className={creditDelta > 0 ? "text-warn" : "text-mint"}>{creditDelta > 0 ? "Ú©Ø§Ù‡Ø´ Ø§Ø¹ØªØ¨Ø§Ø±" : creditDelta < 0 ? "Ø¨Ø±Ú¯Ø´Øª Ø§Ø¹ØªØ¨Ø§Ø±" : "Ø¨Ø¯ÙˆÙ† ØªØºÛŒÛŒØ± Ø§Ø¹ØªØ¨Ø§Ø±"}: {Math.abs(creditDelta).toLocaleString("fa-IR")} Ù‡Ø²Ø§Ø± ØªÙˆÙ…Ø§Ù†</span>
+        </div>}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-5 sm:col-span-2 lg:col-span-4 border-t border-line bg-panel/95 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving} className="w-full sm:w-auto">
             {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
