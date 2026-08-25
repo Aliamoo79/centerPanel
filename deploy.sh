@@ -32,7 +32,7 @@ echo "[1/6] Pulling latest code..."
 git -c safe.directory="$ROOT_DIR" pull --ff-only origin "$GIT_BRANCH"
 
 echo "[2/6] Installing backend dependencies..."
-npm ci --prefix backend
+npm ci --prefer-offline --no-audit --no-fund --prefix backend
 
 echo "[3/6] Preparing database and backend..."
 (
@@ -43,7 +43,7 @@ echo "[3/6] Preparing database and backend..."
 )
 
 echo "[4/6] Installing frontend dependencies..."
-npm ci --prefix frontend
+npm ci --prefer-offline --no-audit --no-fund --prefix frontend
 
 echo "[5/6] Building frontend..."
 npm run build --prefix frontend
