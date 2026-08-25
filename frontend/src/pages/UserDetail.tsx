@@ -445,8 +445,8 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
         </div>
         {error && <p className="sm:col-span-2 lg:col-span-4 text-danger text-sm">{error}</p>}
         {planType && <div className="sm:col-span-2 lg:col-span-4 rounded-lg border border-line bg-panel2/60 px-3 py-2 text-xs flex flex-wrap justify-between gap-2">
-          <span className="text-muted">Ù‡Ø²ÛŒÙ†Ù‡ Ø¬Ø¯ÛŒØ¯: <span className="font-nums text-white" dir="ltr">{estimatedCost.toLocaleString("fa-IR")}</span> Ù‡Ø²Ø§Ø± ØªÙˆÙ…Ø§Ù†</span>
-          <span className={creditDelta > 0 ? "text-warn" : "text-mint"}>{creditDelta > 0 ? "Ú©Ø§Ù‡Ø´ Ø§Ø¹ØªØ¨Ø§Ø±" : creditDelta < 0 ? "Ø¨Ø±Ú¯Ø´Øª Ø§Ø¹ØªØ¨Ø§Ø±" : "Ø¨Ø¯ÙˆÙ† ØªØºÛŒÛŒØ± Ø§Ø¹ØªØ¨Ø§Ø±"}: {Math.abs(creditDelta).toLocaleString("fa-IR")} Ù‡Ø²Ø§Ø± ØªÙˆÙ…Ø§Ù†</span>
+          <span className="text-muted">هزینه جدید: <span className="font-nums text-white" dir="ltr">{estimatedCost.toLocaleString("fa-IR")}</span> هزار تومان</span>
+          <span className={creditDelta > 0 ? "text-warn" : "text-mint"}>{creditDelta > 0 ? "کاهش اعتبار" : creditDelta < 0 ? "برگشت اعتبار" : "بدون تغییر اعتبار"}: {Math.abs(creditDelta).toLocaleString("fa-IR")} هزار تومان</span>
         </div>}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-5 sm:col-span-2 lg:col-span-4 border-t border-line bg-panel/95 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving} className="w-full sm:w-auto">

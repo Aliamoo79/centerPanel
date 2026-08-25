@@ -94,9 +94,9 @@ export default function SalesCreateUserForm({ servers, users, onClose, onSaved }
 
         <div className="rounded-lg border border-line bg-panel2/60 px-3 py-2 text-sm flex flex-wrap justify-between gap-2">
           <span className="text-muted">ساخت روی همه سرورهای فعال ({servers.length})</span>
-          <span className="font-nums text-signal" dir="ltr">هزینه: {cost.toLocaleString("fa-IR")} اعتبار</span>
+          <span className="font-nums text-signal" dir="ltr">هزینه: {cost.toLocaleString("fa-IR")} هزار تومان</span>
         </div>
-        <p className="text-[11px] text-muted">Ù…Ø¨Ù„Øº Ù‡Ø§ Ø¨Ø± Ø§Ø³Ø§Ø³ Ù‡Ø²Ø§Ø± ØªÙˆÙ…Ø§Ù† Ø­Ø³Ø§Ø¨ Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯.</p>
+        <p className="text-[11px] text-muted">مبلغ‌ها بر اساس هزار تومان محاسبه می‌شوند.</p>
         {error && <p className="text-danger text-sm">{error}</p>}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-5 flex gap-2 border-t border-line bg-panel/95 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving || !pricing} className="flex-1 sm:flex-none">{saving ? "در حال ساخت..." : "ساخت کاربر"}</Button>

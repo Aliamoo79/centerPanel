@@ -66,12 +66,12 @@ export default function Credits() {
       <Card className="p-5">
         <p className="text-xs text-muted">موجودی فعلی</p>
         <p className="font-nums text-3xl font-bold text-signal mt-2" dir="ltr">{data.balance.toLocaleString("fa-IR")}</p>
-        <p className="text-xs text-muted mt-1">Unit: thousand toman</p>
+        <p className="text-xs text-muted mt-1">واحد: هزار تومان</p>
         {isAdmin ? <form onSubmit={deposit} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 mt-5">
           <Input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="مقدار اعتبار" dir="ltr" required />
           <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="توضیح (اختیاری)" />
           <Button type="submit">افزایش اعتبار</Button>
-        </form> : <p className="text-xs text-muted mt-4">Ø­Ø³Ø§Ø¨ ÙØ±ÙˆØ´ ÙÙ‚Ø· Ø§Ù…Ú©Ø§Ù† Ù…Ø´Ø§Ù‡Ø¯Ù‡ Ø§ÛŒÙ† Ø¨Ø®Ø´ Ø±Ø§ Ø¯Ø§Ø±Ø¯.</p>}
+        </form> : <p className="text-xs text-muted mt-4">حساب فروش فقط امکان مشاهده این بخش را دارد.</p>}
       </Card>
       <Card className="p-5">
         <h2 className="font-medium">قیمت‌گذاری</h2>
@@ -80,7 +80,7 @@ export default function Credits() {
             <label className="block text-xs text-muted mb-1.5">هزینه هر GB در طرح کاربر نامحدود</label>
             <Input name="creditsPerGB" type="number" min="1" defaultValue={data.pricing.creditsPerGB} dir="ltr" required />
           </div>
-          {Object.entries(packageLabels).map(([code, label]) => (
+        {Object.entries(packageLabels).map(([code, label]) => (
             <div key={code}>
               <label className="block text-xs text-muted mb-1.5">{label}</label>
               <Input name={code} type="number" min="0" defaultValue={packages[code]} dir="ltr" required />
@@ -88,7 +88,19 @@ export default function Credits() {
           ))}
           <div className="sm:col-span-2"><Button type="submit" disabled={saving}>{saving ? "در حال ذخیره..." : "ذخیره قیمت‌ها"}</Button></div>
         </form>}
-        {!isAdmin && <p className="text-xs text-muted mt-3">Ù‚ÛŒÙ…Øªâ€ŒÙ‡Ø§ ØªÙˆØ³Ø· Ù…Ø¯ÛŒØ± ØªÙ†Ø¸ÛŒÙ… Ù…ÛŒâ€ŒØ´ÙˆÙ†Ø¯.</p>}
+        {!isAdmin && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+          <div className="sm:col-span-2 rounded-lg border border-line bg-panel2 px-3 py-2.5 flex items-center justify-between gap-3">
+            <span className="text-sm text-muted">هزینه هر GB در طرح کاربر نامحدود</span>
+            <span className="font-nums text-white" dir="ltr">{data.pricing.creditsPerGB.toLocaleString("fa-IR")} هزار تومان</span>
+          </div>
+          {Object.entries(packageLabels).map(([code, label]) => (
+            <div key={code} className="rounded-lg border border-line bg-panel2 px-3 py-2.5 flex items-center justify-between gap-3">
+              <span className="text-sm text-muted">{label}</span>
+              <span className="font-nums text-white" dir="ltr">{Number(packages[code]).toLocaleString("fa-IR")} هزار تومان</span>
+            </div>
+          ))}
+        </div>}
+        {!isAdmin && <p className="text-xs text-muted mt-3">قیمت‌ها توسط مدیر تنظیم می‌شوند.</p>}
       </Card>
       <Card className="overflow-hidden">
         <div className="p-5 border-b border-line"><h2 className="font-medium">تراکنش‌های اخیر</h2></div>
