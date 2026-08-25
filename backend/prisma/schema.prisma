@@ -56,14 +56,48 @@ model User {
   ipLimit      Int? // null = unlimited simultaneous connections; only enforced by panels that support it (3x-ui, X4G)
   expireAt     DateTime? // null = never
   status       String     @default("ACTIVE") // "ACTIVE" | "DISABLED" | "EXPIRED"
+  planType     String?    // "UNLIMITED_USER" or "UNLIMITED_USAGE" for sales-center users
+  packageCode  String?    // e.g. "1M_1U", "1M_2U", "2M_1U", "2M_2U"
+  creditCost   Int?       // credits charged when this user was created
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   links UserServerLink[]
   referrer User? @relation("UserReferrals", fields: [referrerId], references: [id], onDelete: SetNull)
   referrals User[] @relation("UserReferrals")
+  creditTransactions CreditTransaction[]
 
   @@index([referrerId])
+}
+
+// One global sales-center balance and configurable package pricing.
+model CreditAccount {
+  id           String   @id @default("global")
+  balance      Int      @default(0)
+  creditsPerGB Int      @default(2000)
+  package1M1U  Int      @default(0)
+  package1M2U  Int      @default(0)
+  package2M1U  Int      @default(0)
+  package2M2U  Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  transactions CreditTransaction[]
+}
+
+model CreditTransaction {
+  id          String        @id @default(cuid())
+  amount      Int           // positive = credit added, negative = credit spent
+  type        String        // "DEPOSIT", "USER_CREATION", "REFUND"
+  description String?
+  userId      String?
+  accountId   String        @default("global")
+  createdAt   DateTime      @default(now())
+
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  account     CreditAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
 }
 
 // Join entity: which servers a given user has a provisioned account on,

@@ -7,7 +7,10 @@ import { beginUserUsageSync, getUserUsageSyncProgress, syncAllUserUsage, syncUse
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
+import { AppError } from "../lib/errors";
 import { randomInt } from "crypto";
+import { getCreditAccount, packagePrice, PACKAGE_CODES, PackageCode } from "../services/credits";
+import { buildSubscription } from "../services/subscription";
 
 export const usersRouter = Router();
 usersRouter.use(requireAdmin);
@@ -19,7 +22,10 @@ const createUserSchema = z.object({
   dataLimitGB: z.number().positive().nullable().optional(),
   expireAt: z.string().datetime().nullable().optional(), // ISO string
   ipLimit: z.number().int().positive().nullable().optional(),
-  serverIds: z.array(z.string()).min(1, "حداقل یک سرور باید انتخاب شود"),
+  serverIds: z.array(z.string()).min(1, "حداقل یک سرور باید انتخاب شود").optional(),
+  planType: z.enum(["UNLIMITED_USER", "UNLIMITED_USAGE"]).optional(),
+  packageCode: z.enum(PACKAGE_CODES).optional(),
+  durationDays: z.number().int().positive().optional(),
 });
 
 function publicBaseUrl() {
@@ -107,9 +113,11 @@ usersRouter.get(
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
     const usage = cachedUserUsage(user);
+    const subscription = await buildSubscription(user.subToken);
     const quotaExceeded = usage.dataLimitBytes !== null && usage.usedBytes >= usage.dataLimitBytes;
     res.json({
       ...toPublicUser(user),
+      configs: subscription?.rawConfigs ?? [],
       ...(quotaExceeded ? { status: "EXPIRED" } : {}),
       usage,
       usageRefresh: getUserUsageSyncProgress(user.id),
@@ -196,32 +204,99 @@ usersRouter.post(
   asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = createUserSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    const { username: enteredName, referrerId, note, dataLimitGB, expireAt, ipLimit, serverIds } = parsed.data;
+    const { username: enteredName, referrerId, note, dataLimitGB, expireAt, ipLimit, serverIds, planType, packageCode, durationDays } = parsed.data;
     const displayName = enteredName.trim();
     const username = await makeInternalUsername(displayName);
+    const salesFlow = Boolean(planType);
+
+    let resolvedDataLimitGB = dataLimitGB ?? null;
+    let resolvedExpireAt = expireAt ? new Date(expireAt) : null;
+    let resolvedIpLimit = ipLimit ?? null;
+    let resolvedPackageCode: PackageCode | null = packageCode ?? null;
+    let creditCost: number | null = null;
 
     if (referrerId) {
       const referrer = await prisma.user.findUnique({ where: { id: referrerId }, select: { id: true } });
       if (!referrer) return res.status(400).json({ error: "Referrer not found" });
     }
 
-    const servers = await prisma.server.findMany({ where: { id: { in: serverIds } } });
+    if (salesFlow) {
+      if (planType === "UNLIMITED_USER") {
+        if (!resolvedDataLimitGB || !durationDays) throw new AppError("برای این نوع کاربر، حجم و تعداد روز الزامی است");
+        const account = await getCreditAccount();
+        creditCost = Math.ceil(resolvedDataLimitGB * account.creditsPerGB);
+        resolvedExpireAt = new Date(Date.now() + durationDays * 86_400_000);
+        resolvedPackageCode = null;
+      } else {
+        if (!packageCode) throw new AppError("یک بسته اعتبار باید انتخاب شود");
+        const account = await getCreditAccount();
+        creditCost = packagePrice(account, packageCode);
+        if (creditCost <= 0) throw new AppError("قیمت این بسته هنوز در بخش اعتبار تنظیم نشده است");
+        const months = packageCode.startsWith("1M") ? 1 : 2;
+        const users = packageCode.endsWith("1U") ? 1 : 2;
+        resolvedDataLimitGB = null;
+        resolvedIpLimit = users === 1 ? 3 : 5;
+        resolvedExpireAt = new Date();
+        resolvedExpireAt.setMonth(resolvedExpireAt.getMonth() + months);
+      }
+    }
+
+    const servers = salesFlow
+      ? await prisma.server.findMany({ where: { status: "ACTIVE" }, orderBy: { createdAt: "asc" } })
+      : await prisma.server.findMany({ where: { id: { in: serverIds ?? [] } } });
     if (servers.length === 0) return res.status(400).json({ error: "هیچ سروری پیدا نشد" });
 
-    const user = await prisma.user.create({
-      data: {
-        username,
-        displayName,
-        referrerId: referrerId ?? null,
-        note,
-        dataLimitGB: dataLimitGB ?? null,
-        expireAt: expireAt ? new Date(expireAt) : null,
-        ipLimit: ipLimit ?? null,
-      },
-    });
+    const user = salesFlow
+      ? await prisma.$transaction(async (tx) => {
+        const account = await tx.creditAccount.upsert({
+          where: { id: "global" },
+          create: { id: "global" },
+          update: {},
+        });
+        const deducted = await tx.creditAccount.updateMany({
+          where: { id: "global", balance: { gte: creditCost ?? 0 } },
+          data: { balance: { decrement: creditCost ?? 0 } },
+        });
+        if (deducted.count !== 1) throw new AppError("اعتبار کافی نیست");
+        const created = await tx.user.create({
+          data: {
+            username,
+            displayName,
+            referrerId: referrerId ?? null,
+            note,
+            dataLimitGB: resolvedDataLimitGB,
+            expireAt: resolvedExpireAt,
+            ipLimit: resolvedIpLimit,
+            planType,
+            packageCode: resolvedPackageCode,
+            creditCost,
+          },
+        });
+        await tx.creditTransaction.create({
+          data: {
+            amount: -(creditCost ?? 0),
+            type: "USER_CREATION",
+            description: `ساخت کاربر ${displayName}`,
+            userId: created.id,
+            accountId: account.id,
+          },
+        });
+        return created;
+      })
+      : await prisma.user.create({
+        data: {
+          username,
+          displayName,
+          referrerId: referrerId ?? null,
+          note,
+          dataLimitGB: resolvedDataLimitGB,
+          expireAt: resolvedExpireAt,
+          ipLimit: resolvedIpLimit,
+        },
+      });
 
-    const dataLimitBytes = dataLimitGB ? dataLimitGB * 1024 * 1024 * 1024 : null;
-    const expireDate = expireAt ? new Date(expireAt) : null;
+    const dataLimitBytes = resolvedDataLimitGB ? resolvedDataLimitGB * 1024 * 1024 * 1024 : null;
+    const expireDate = resolvedExpireAt;
 
     const results = await Promise.allSettled(
       servers.map(async (server: (typeof servers)[number]) => {
@@ -230,7 +305,7 @@ usersRouter.post(
           username,
           dataLimitBytes,
           expireAt: expireDate,
-          ipLimit: ipLimit ?? null,
+          ipLimit: resolvedIpLimit,
         });
         await prisma.userServerLink.create({
           data: {

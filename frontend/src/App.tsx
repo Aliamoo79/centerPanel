@@ -8,6 +8,7 @@ import Servers from "./pages/Servers";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Logs from "./pages/Logs";
+import Credits from "./pages/Credits";
 import { getToken } from "./lib/api";
 import { useToast } from "./lib/toast";
 
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
         <Route path="/users/:id" element={<RequireAuth><UserDetail /></RequireAuth>} />
         <Route path="/logs" element={<RequireAuth><Logs /></RequireAuth>} />
+        <Route path="/credits" element={<RequireAuth><Credits /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </ErrorBoundary>

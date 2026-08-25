@@ -33,6 +33,9 @@ const userSchema = z.object({
   ipLimit: z.number().int().nullable(),
   expireAt: dateValue,
   status: z.enum(["ACTIVE", "DISABLED", "EXPIRED"]),
+  planType: z.string().nullable().optional(),
+  packageCode: z.string().nullable().optional(),
+  creditCost: z.number().int().nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

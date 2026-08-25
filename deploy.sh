@@ -8,6 +8,10 @@ if [[ -f "$ROOT_DIR/.deploy-config" ]]; then
   # shellcheck disable=SC1091
   source "$ROOT_DIR/.deploy-config"
 fi
+# Deploy the branch currently checked out on the VPS by default. This keeps
+# feature branches deployable while allowing .deploy-config or the environment
+# to explicitly select another branch (for example: GIT_BRANCH=main).
+GIT_BRANCH="${GIT_BRANCH:-$(git branch --show-current)}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 SYSTEMD_SERVICE="${SYSTEMD_SERVICE:-centerpanel}"
 

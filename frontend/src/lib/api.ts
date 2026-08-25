@@ -90,6 +90,12 @@ export const api = {
       body: JSON.stringify(backup),
     }),
 
+  getCredits: () => request<any>("/credits"),
+  addCredits: (data: { amount: number; description?: string }) =>
+    request<{ balance: number }>("/credits/deposit", { method: "POST", body: JSON.stringify(data) }),
+  updateCreditPricing: (data: any) =>
+    request<any>("/credits/pricing", { method: "PATCH", body: JSON.stringify(data) }),
+
   listLogs: (params?: { level?: string; limit?: number }) => {
     const qs = new URLSearchParams();
     if (params?.level) qs.set("level", params.level);

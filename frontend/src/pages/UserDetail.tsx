@@ -12,6 +12,7 @@ export default function UserDetail() {
   const [user, setUser] = useState<any | null>(null);
   const [servers, setServers] = useState<any[] | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copiedConfig, setCopiedConfig] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [resettingUsage, setResettingUsage] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -99,6 +100,23 @@ export default function UserDetail() {
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  }
+
+  async function copyConfig(config: string, index: number) {
+    try {
+      await navigator.clipboard.writeText(config);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = config;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setCopiedConfig(index);
+    setTimeout(() => setCopiedConfig((current) => current === index ? null : current), 1500);
   }
 
   async function handleDelete() {
@@ -209,6 +227,32 @@ export default function UserDetail() {
             {copied ? "کپی شد ✓" : "کپی لینک"}
           </Button>
         </div>
+      </Card>
+
+      <Card className="p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div>
+            <p className="text-sm font-medium">VLESS configs</p>
+            <p className="text-xs text-muted mt-1">All active configurations generated from the connected servers</p>
+          </div>
+          <span className="font-nums text-xs text-muted">{(user.configs ?? []).length}</span>
+        </div>
+        {(user.configs ?? []).length === 0 ? (
+          <p className="text-sm text-muted py-3">No VLESS configuration is available yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {(user.configs ?? []).map((config: string, index: number) => (
+              <div key={`${config}-${index}`} className="flex flex-col sm:flex-row gap-2 rounded-lg border border-line bg-panel2 p-2">
+                <div className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-2 py-2 text-xs font-nums text-white" dir="ltr">
+                  {config}
+                </div>
+                <Button variant="ghost" onClick={() => copyConfig(config, index)} className="shrink-0">
+                  {copiedConfig === index ? "Copied ✓" : "Copy"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Card className="p-4 sm:p-5">

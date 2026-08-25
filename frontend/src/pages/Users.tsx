@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { Card, Button, Input, EmptyState, Modal, Select, Skeleton } from "../components/ui";
 import { formatBytes, formatDate } from "../lib/format";
 import { useToast } from "../lib/toast";
+import SalesCreateUserForm from "../components/SalesCreateUserForm";
 
 export default function Users() {
   const toast = useToast();
@@ -117,7 +118,7 @@ export default function Users() {
       </div>
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title="افزودن کاربر جدید">
-        <CreateUserForm
+        <SalesCreateUserForm
           servers={servers ?? []}
           users={users ?? []}
           onClose={() => setShowForm(false)}

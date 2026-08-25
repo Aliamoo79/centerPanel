@@ -7,6 +7,7 @@ const nav = [
   { to: "/servers", label: "سرورها", icon: ServerIcon },
   { to: "/users", label: "کاربران", icon: UsersIcon },
   { to: "/logs", label: "لاگ‌ها", icon: LogsIcon },
+  { to: "/credits", label: "اعتبار", icon: CreditIcon },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -77,4 +78,5 @@ function OverviewIcon() { return <svg width="18" height="18" viewBox="0 0 18 18"
 function ServerIcon() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="4.5" rx="1.2" stroke="currentColor" strokeWidth="1.5"/><rect x="2" y="10.5" width="14" height="4.5" rx="1.2" stroke="currentColor" strokeWidth="1.5"/><circle cx="5" cy="5.25" r=".75" fill="currentColor"/><circle cx="5" cy="12.75" r=".75" fill="currentColor"/></svg>; }
 function UsersIcon() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="6.5" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.5"/><path d="M2 15c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><circle cx="13" cy="5.5" r="2" stroke="currentColor" strokeWidth="1.3"/><path d="M11.5 9.2c1.9.2 3.5 1.6 3.5 3.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>; }
 function LogsIcon() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 3.5h12M3 7.5h9M3 11.5h12M3 15.5h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>; }
+function CreditIcon() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M9 5.5v7M11.5 7.2c-.5-.5-1.2-.8-2.3-.8-1.2 0-2 .6-2 1.4 0 2.1 4.3.9 4.3 3 0 .8-.8 1.5-2.2 1.5-1 0-1.8-.3-2.4-.9" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round"/></svg>; }
 function LogoutIcon() { return <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M7 3H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 12l4-3-4-3M15 9H7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>; }

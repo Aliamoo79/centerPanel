@@ -7,6 +7,7 @@ import { usersRouter } from "./routes/users";
 import { subscriptionRouter } from "./routes/subscription";
 import { logsRouter } from "./routes/logs";
 import { backupRouter } from "./routes/backup";
+import { creditsRouter } from "./routes/credits";
 import { requestLogger, notFoundHandler, errorHandler } from "./middleware/observability";
 import { logger } from "./lib/logger";
 import { syncAllUserUsage } from "./services/usage";
@@ -26,6 +27,7 @@ app.use("/api/servers", serversRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/backup", backupRouter);
+app.use("/api/credits", creditsRouter);
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
