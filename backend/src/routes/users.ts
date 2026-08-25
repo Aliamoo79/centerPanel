@@ -420,6 +420,12 @@ usersRouter.patch(
         if (nextCreditCost <= 0) throw new AppError("قیمت این بسته هنوز در بخش اعتبار تنظیم نشده است");
         nextDataLimitGB = null;
         nextIpLimit = nextPackageCode.endsWith("1U") ? 3 : 5;
+        const packageChanged = user.planType !== "UNLIMITED_USAGE" || nextPackageCode !== user.packageCode;
+        if (packageChanged) {
+          const months = nextPackageCode.startsWith("1M") ? 1 : 2;
+          nextExpireDate = new Date();
+          nextExpireDate.setMonth(nextExpireDate.getMonth() + months);
+        }
       } else {
         throw new AppError("نوع طرح کاربر معتبر نیست");
       }

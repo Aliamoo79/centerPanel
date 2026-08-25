@@ -9,12 +9,17 @@ import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Logs from "./pages/Logs";
 import Credits from "./pages/Credits";
-import { getToken } from "./lib/api";
+import { getRole, getToken } from "./lib/api";
 import { useToast } from "./lib/toast";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
   return <Layout>{children}</Layout>;
+}
+
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  if (getRole() !== "ADMIN") return <Navigate to="/" replace />;
+  return <>{children}</>;
 }
 
 // Catches promise rejections that slip past a page's own try/catch (e.g. a
@@ -42,7 +47,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<RequireAuth><Overview /></RequireAuth>} />
-        <Route path="/servers" element={<RequireAuth><Servers /></RequireAuth>} />
+        <Route path="/servers" element={<RequireAuth><RequireAdmin><Servers /></RequireAdmin></RequireAuth>} />
         <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
         <Route path="/users/:id" element={<RequireAuth><UserDetail /></RequireAuth>} />
         <Route path="/logs" element={<RequireAuth><Logs /></RequireAuth>} />

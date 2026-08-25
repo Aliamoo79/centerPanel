@@ -77,7 +77,7 @@ export default function SalesCreateUserForm({ servers, users, onClose, onSaved }
               <span className="block text-sm font-medium">کاربر نامحدود</span><span className="block text-xs mt-1">هزینه بر اساس GB و روز</span>
             </button>
             <button type="button" onClick={() => setPlanType("UNLIMITED_USAGE")} className={`text-right p-3 rounded-[10px] border ${planType === "UNLIMITED_USAGE" ? "border-signal bg-signal/15 text-white" : "border-line text-muted"}`}>
-              <span className="block text-sm font-medium">مصرف نامحدود</span><span className="block text-xs mt-1">بسته زمانی و تعداد کاربر</span>
+              <span className="block text-sm font-medium">حجم نامحدود</span><span className="block text-xs mt-1">بسته زمانی و تعداد کاربر</span>
             </button>
           </div>
         </div>

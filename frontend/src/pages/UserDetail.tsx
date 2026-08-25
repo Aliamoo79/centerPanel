@@ -367,7 +367,6 @@ function UserDetailSkeleton() {
 function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { server: string; error: string }[]) => void }) {
   const [dataLimitGB, setDataLimitGB] = useState(user.dataLimitGB?.toString() ?? "");
   const [expireAt, setExpireAt] = useState(user.expireAt ? user.expireAt.slice(0, 10) : "");
-  const [ipLimit, setIpLimit] = useState(user.ipLimit?.toString() ?? "");
   const [status, setStatus] = useState(user.status);
   const [planType, setPlanType] = useState<"" | "UNLIMITED_USER" | "UNLIMITED_USAGE">(user.planType ?? "");
   const [packageCode, setPackageCode] = useState(user.packageCode ?? "1M_1U");
@@ -393,8 +392,8 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
     try {
       const res = await api.updateUser(user.id, {
         dataLimitGB: planType === "UNLIMITED_USAGE" ? null : dataLimitGB ? Number(dataLimitGB) : null,
-        expireAt: expireAt ? new Date(expireAt).toISOString() : null,
-        ipLimit: planType === "UNLIMITED_USAGE" ? undefined : ipLimit ? Number(ipLimit) : null,
+        expireAt: planType === "UNLIMITED_USAGE" ? undefined : expireAt ? new Date(expireAt).toISOString() : null,
+        ipLimit: undefined,
         status,
         planType: planType || null,
         packageCode: planType === "UNLIMITED_USAGE" ? packageCode : null,
@@ -412,16 +411,21 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
       <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div className="sm:col-span-2 lg:col-span-4">
           <label className="block text-xs text-muted mb-1.5">نوع طرح فروش</label>
-          <Select value={planType} onChange={(e) => setPlanType(e.target.value as typeof planType)}>
-            <option value="">بدون طرح فروش (قدیمی)</option>
-            <option value="UNLIMITED_USER">کاربر نامحدود — حجمی</option>
-            <option value="UNLIMITED_USAGE">مصرف نامحدود — بسته اشتراک</option>
-          </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button type="button" onClick={() => setPlanType("UNLIMITED_USER")} className={`text-right p-3 rounded-[10px] border ${planType === "UNLIMITED_USER" ? "border-signal bg-signal/15 text-white" : "border-line text-muted"}`}>
+              <span className="block text-sm font-medium">کاربر نامحدود</span>
+              <span className="block text-xs mt-1">حجم مشخص با مدت اعتبار</span>
+            </button>
+            <button type="button" onClick={() => setPlanType("UNLIMITED_USAGE")} className={`text-right p-3 rounded-[10px] border ${planType === "UNLIMITED_USAGE" ? "border-signal bg-signal/15 text-white" : "border-line text-muted"}`}>
+              <span className="block text-sm font-medium">حجم نامحدود</span>
+              <span className="block text-xs mt-1">بسته زمانی و تعداد کاربر</span>
+            </button>
+          </div>
         </div>
-        <div>
+        {planType !== "UNLIMITED_USAGE" && <div>
           <label className="block text-xs text-muted mb-1.5">سقف مصرف (GB)</label>
           <Input type="number" value={dataLimitGB} onChange={(e) => setDataLimitGB(e.target.value)} dir="ltr" />
-        </div>
+        </div>}
         {planType === "UNLIMITED_USAGE" && <div className="sm:col-span-2 lg:col-span-4">
           <label className="block text-xs text-muted mb-1.5">بسته اشتراک</label>
           <Select value={packageCode} onChange={(e) => setPackageCode(e.target.value)}>
@@ -431,14 +435,10 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
             <option value="2M_2U">2 ماه / 2 کاربر — IP 5</option>
           </Select>
         </div>}
-        <div>
+        {planType !== "UNLIMITED_USAGE" && <div>
           <label className="block text-xs text-muted mb-1.5">تاریخ انقضا</label>
           <Input type="date" value={expireAt} onChange={(e) => setExpireAt(e.target.value)} dir="ltr" />
-        </div>
-        <div>
-          <label className="block text-xs text-muted mb-1.5">محدودیت IP همزمان</label>
-          <Input type="number" min="1" value={ipLimit} onChange={(e) => setIpLimit(e.target.value)} dir="ltr" placeholder="نامحدود" />
-        </div>
+        </div>}
         <div>
           <label className="block text-xs text-muted mb-1.5">وضعیت</label>
           <Select value={status} onChange={(e) => setStatus(e.target.value)}>

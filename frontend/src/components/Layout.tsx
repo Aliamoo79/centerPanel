@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { clearToken } from "../lib/api";
+import { clearToken, getRole } from "../lib/api";
 
 const nav = [
   { to: "/", label: "نمای کلی", icon: OverviewIcon },
@@ -13,6 +13,7 @@ const nav = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const logout = () => { clearToken(); navigate("/login"); };
+  const visibleNav = getRole() === "SELLER" ? nav.filter((item) => item.to !== "/servers") : nav;
 
   return (
     <div className="min-h-screen flex bg-ink text-white">
@@ -23,7 +24,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className="font-nums text-muted">PANEL</span>
         </div>
         <nav className="flex-1 px-3 py-2 space-y-1.5">
-          {nav.map((item) => (
+          {visibleNav.map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) =>
               `group flex items-center gap-3 px-3.5 py-3 rounded-[10px] text-sm transition-[background-color,color,box-shadow] duration-150 ${isActive ? "bg-signal text-ink font-semibold shadow-[0_10px_28px_rgba(139,124,255,.18)]" : "text-muted hover:text-white hover:bg-panel2"}`
             }>
@@ -55,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </main>
 
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[#101322]/95 backdrop-blur-md border-t border-line flex" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        {nav.map((item) => (
+        {visibleNav.map((item) => (
           <NavLink key={item.to} to={item.to} end={item.to === "/"} className={({ isActive }) => `flex-1 flex flex-col items-center gap-1 min-h-[60px] justify-center text-[11px] transition-colors duration-150 ${isActive ? "text-signal" : "text-muted"}`}>
             {({ isActive }) => <><span className={`flex items-center justify-center rounded-full px-3 py-0.5 transition-colors duration-150 ${isActive ? "bg-signal/10" : ""}`}><item.icon /></span>{item.label}</>}
           </NavLink>
