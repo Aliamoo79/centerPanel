@@ -1,5 +1,5 @@
 export function formatBytes(bytes: number): string {
-  if (!bytes || bytes <= 0) return "۰ GB";
+  if (!bytes || bytes <= 0) return "0 GB";
   const gb = bytes / (1024 * 1024 * 1024);
   if (gb < 1) return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
   return `${gb.toFixed(gb < 10 ? 2 : 1)} GB`;
@@ -8,7 +8,17 @@ export function formatBytes(bytes: number): string {
 export function formatDate(d: string | Date | null): string {
   if (!d) return "نامحدود";
   const date = new Date(d);
-  return new Intl.DateTimeFormat("fa-IR", { year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat("fa-IR-u-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+}
+
+export function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+}
+
+export function formatDateTime(d: string | Date): string {
+  return new Intl.DateTimeFormat("fa-IR-u-nu-latn", {
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).format(new Date(d));
 }
 
 export function daysLeft(d: string | Date | null): number | null {

@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { api, getRole } from "../lib/api";
 import { Button, Card, Input, LoadingRegion, Skeleton } from "../components/ui";
 import { useToast } from "../lib/toast";
+import { formatNumber } from "../lib/format";
 
 const packageLabels: Record<string, string> = {
-  "1M_1U": "۱ ماه / ۱ کاربر",
-  "1M_2U": "۱ ماه / ۲ کاربر",
-  "2M_1U": "۲ ماه / ۱ کاربر",
-  "2M_2U": "۲ ماه / ۲ کاربر",
+  "1M_1U": "1 ماه / 1 کاربر",
+  "1M_2U": "1 ماه / 2 کاربر",
+  "2M_1U": "2 ماه / 1 کاربر",
+  "2M_2U": "2 ماه / 2 کاربر",
 };
 
 export default function Credits() {
@@ -65,7 +66,7 @@ export default function Credits() {
       </div>
       <Card className="p-5">
         <p className="text-xs text-muted">موجودی فعلی</p>
-        <p className="font-nums text-3xl font-bold text-signal mt-2" dir="ltr">{data.balance.toLocaleString("fa-IR")}</p>
+        <p className="font-nums text-3xl font-bold text-signal mt-2" dir="ltr">{formatNumber(data.balance)}</p>
         <p className="text-xs text-muted mt-1">واحد: هزار تومان</p>
         {isAdmin ? <form onSubmit={deposit} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 mt-5">
           <Input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="مقدار اعتبار" dir="ltr" required />
@@ -91,12 +92,15 @@ export default function Credits() {
         {!isAdmin && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
           <div className="sm:col-span-2 rounded-lg border border-line bg-panel2 px-3 py-2.5 flex items-center justify-between gap-3">
             <span className="text-sm text-muted">هزینه هر GB در طرح کاربر نامحدود</span>
-            <span className="font-nums text-white" dir="ltr">{data.pricing.creditsPerGB.toLocaleString("fa-IR")} هزار تومان</span>
+            <span className="font-nums text-white" dir="ltr">{formatNumber(data.pricing.creditsPerGB)} هزار تومان</span>
           </div>
           {Object.entries(packageLabels).map(([code, label]) => (
-            <div key={code} className="rounded-lg border border-line bg-panel2 px-3 py-2.5 flex items-center justify-between gap-3">
-              <span className="text-sm text-muted">{label}</span>
-              <span className="font-nums text-white" dir="ltr">{Number(packages[code]).toLocaleString("fa-IR")} هزار تومان</span>
+            <div key={code} className="rounded-lg border border-line bg-panel2 px-3 py-2.5 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <span className="font-nums text-[11px] text-signal block" dir="ltr">{code}</span>
+                <span className="text-sm text-white block mt-0.5">{label}</span>
+              </div>
+              <span className="font-nums text-white shrink-0" dir="ltr">{formatNumber(Number(packages[code]))} هزار تومان</span>
             </div>
           ))}
         </div>}
@@ -108,7 +112,7 @@ export default function Credits() {
           {data.transactions.map((tx: any) => (
             <div key={tx.id} className="p-4 flex items-center justify-between gap-4">
               <div className="min-w-0"><p className="text-sm truncate">{tx.description || tx.type}</p><p className="text-xs text-muted mt-1">{tx.user?.displayName || "مدیریت اعتبار"}</p></div>
-              <span className={`font-nums shrink-0 ${tx.amount < 0 ? "text-danger" : "text-mint"}`} dir="ltr">{tx.amount > 0 ? "+" : ""}{tx.amount.toLocaleString("fa-IR")}</span>
+              <span className={`font-nums shrink-0 ${tx.amount < 0 ? "text-danger" : "text-mint"}`} dir="ltr">{tx.amount > 0 ? "+" : ""}{formatNumber(tx.amount)}</span>
             </div>
           ))}
           {data.transactions.length === 0 && <p className="p-5 text-sm text-muted">هنوز تراکنشی ثبت نشده است.</p>}

@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Card, Button, Input } from "./ui";
 import { useToast } from "../lib/toast";
+import { formatNumber } from "../lib/format";
 
 const packageOptions = [
-  ["1M_1U", "۱ ماه / ۱ کاربر", 3],
-  ["1M_2U", "۱ ماه / ۲ کاربر", 5],
-  ["2M_1U", "۲ ماه / ۱ کاربر", 3],
-  ["2M_2U", "۲ ماه / ۲ کاربر", 5],
+  ["1M_1U", "1 ماه / 1 کاربر", 3],
+  ["1M_2U", "1 ماه / 2 کاربر", 5],
+  ["2M_1U", "2 ماه / 1 کاربر", 3],
+  ["2M_2U", "2 ماه / 2 کاربر", 5],
 ] as const;
 
 export default function SalesCreateUserForm({ servers, users, onClose, onSaved }: { servers: any[]; users: any[]; onClose: () => void; onSaved: () => void }) {
@@ -88,13 +89,13 @@ export default function SalesCreateUserForm({ servers, users, onClose, onSaved }
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {packageOptions.map(([code, label, ipLimit]) => <button type="button" key={code} onClick={() => setPackageCode(code)} className={`text-right p-3 rounded-[10px] border ${packageCode === code ? "border-signal bg-signal/15 text-white" : "border-line text-muted"}`}><span className="block text-sm font-medium">{label}</span><span className="block text-xs mt-1">IP همزمان: {ipLimit}</span></button>)}
+            {packageOptions.map(([code, label, ipLimit]) => <button type="button" key={code} onClick={() => setPackageCode(code)} className={`text-right p-3 rounded-[10px] border ${packageCode === code ? "border-signal bg-signal/15 text-white" : "border-line text-muted"}`}><span className="block text-sm font-medium">{label}</span><span className="block text-xs mt-1">IP همزمان: {ipLimit} · {formatNumber(Number(pricing?.packages?.[code] || 0))} هزار تومان</span></button>)}
           </div>
         )}
 
         <div className="rounded-lg border border-line bg-panel2/60 px-3 py-2 text-sm flex flex-wrap justify-between gap-2">
           <span className="text-muted">ساخت روی همه سرورهای فعال ({servers.length})</span>
-          <span className="font-nums text-signal" dir="ltr">هزینه: {cost.toLocaleString("fa-IR")} هزار تومان</span>
+          <span className="font-nums text-signal" dir="ltr">هزینه: {formatNumber(cost)} هزار تومان</span>
         </div>
         <p className="text-[11px] text-muted">مبلغ‌ها بر اساس هزار تومان محاسبه می‌شوند.</p>
         {error && <p className="text-danger text-sm">{error}</p>}

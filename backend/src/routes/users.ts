@@ -81,6 +81,26 @@ function cachedUserUsage(user: any) {
   };
 }
 
+function sellerEditBlockReason(user: any): string | null {
+  const ageLimit = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  if (new Date(user.createdAt).getTime() <= ageLimit) {
+    return "فروشنده فقط تا ۳ روز پس از ساخت کاربر اجازه ویرایش دارد";
+  }
+
+  const totalBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
+  const usedBytes = cachedUserUsage(user).usedBytes;
+  if (totalBytes !== null && usedBytes >= totalBytes * 0.1) {
+    return "پس از مصرف ۱۰٪ حجم، ویرایش کاربر فقط برای مدیر مجاز است";
+  }
+  return null;
+}
+
+function assertSellerCanEditUser(req: AuthedRequest, user: any) {
+  if (req.admin?.role !== "SELLER") return;
+  const reason = sellerEditBlockReason(user);
+  if (reason) throw new AppError(reason, 403);
+}
+
 usersRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
@@ -105,7 +125,7 @@ usersRouter.post(
 
 usersRouter.get(
   "/:id",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
       include: { referrer: { select: { id: true, displayName: true } }, referrals: { select: { id: true, displayName: true } }, links: { include: { server: true } } },
@@ -118,6 +138,8 @@ usersRouter.get(
     res.json({
       ...toPublicUser(user),
       configs: subscription?.rawConfigs ?? [],
+      sellerCanEdit: req.admin?.role !== "SELLER" || !sellerEditBlockReason(user),
+      sellerEditBlockReason: req.admin?.role === "SELLER" ? sellerEditBlockReason(user) : null,
       ...(quotaExceeded ? { status: "EXPIRED" } : {}),
       usage,
       usageRefresh: getUserUsageSyncProgress(user.id),
@@ -370,6 +392,7 @@ usersRouter.patch(
     const user = await prisma.user.findUnique({ where: { id: req.params.id }, include: { links: { include: { server: true } } } });
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
 
+    assertSellerCanEditUser(req, user);
     const { dataLimitGB, expireAt, ipLimit, status, note, referrerId, planType, packageCode } = parsed.data;
     if (referrerId === user.id) return res.status(400).json({ error: "A user cannot refer themselves" });
     if (referrerId) {
@@ -405,6 +428,31 @@ usersRouter.patch(
 
     const dataLimitBytes = nextDataLimitGB === undefined ? undefined : nextDataLimitGB ? nextDataLimitGB * 1024 * 1024 * 1024 : null;
     const expireDate = nextExpireDate;
+
+    // Reserve or refund the price before touching remote panels. If the seller
+    // cannot afford an upgrade, no remote configuration is changed.
+    if (creditDelta !== 0) {
+      await prisma.$transaction(async (tx) => {
+        if (creditDelta > 0) {
+          const charged = await tx.creditAccount.updateMany({
+            where: { id: "global", balance: { gte: creditDelta } },
+            data: { balance: { decrement: creditDelta } },
+          });
+          if (charged.count !== 1) throw new AppError("اعتبار کافی برای این تغییر وجود ندارد");
+        } else {
+          await tx.creditAccount.update({ where: { id: "global" }, data: { balance: { increment: -creditDelta } } });
+        }
+        await tx.creditTransaction.create({
+          data: {
+            amount: -creditDelta,
+            type: creditDelta > 0 ? "USER_EDIT_CHARGE" : "USER_EDIT_REFUND",
+            description: `تغییر طرح کاربر ${user.displayName}`,
+            userId: user.id,
+            accountId: "global",
+          },
+        });
+      });
+    }
 
     // propagate limit/expiry/ip-limit/enable changes to every provisioned server
     const results = await Promise.allSettled(
@@ -449,39 +497,17 @@ usersRouter.patch(
       });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
-      if (creditDelta > 0) {
-        const charged = await tx.creditAccount.updateMany({
-          where: { id: "global", balance: { gte: creditDelta } },
-          data: { balance: { decrement: creditDelta } },
-        });
-        if (charged.count !== 1) throw new AppError("اعتبار کافی برای این تغییر وجود ندارد");
-      } else if (creditDelta < 0) {
-        await tx.creditAccount.update({ where: { id: "global" }, data: { balance: { increment: -creditDelta } } });
-      }
-      if (creditDelta !== 0) {
-        await tx.creditTransaction.create({
-          data: {
-            amount: -creditDelta,
-            type: creditDelta > 0 ? "USER_EDIT_CHARGE" : "USER_EDIT_REFUND",
-            description: `تغییر طرح کاربر ${user.displayName}`,
-            userId: user.id,
-            accountId: "global",
-          },
-        });
-      }
-      return tx.user.update({
-        where: { id: req.params.id },
-        data: {
-          note,
-          ...(dataLimitBytes !== undefined ? { dataLimitGB: dataLimitBytes === null ? null : dataLimitBytes / (1024 * 1024 * 1024) } : {}),
-          ...(expireDate !== undefined ? { expireAt: expireDate } : {}),
-          ...(nextIpLimit !== undefined ? { ipLimit: nextIpLimit } : {}),
-          ...(status !== undefined ? { status } : {}),
-          ...(referrerId !== undefined ? { referrerId } : {}),
-          ...(isSalesEdit ? { planType: nextPlanType, packageCode: nextPlanType === "UNLIMITED_USAGE" ? nextPackageCode : null, creditCost: nextCreditCost } : {}),
-        },
-      });
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: {
+        note,
+        ...(dataLimitBytes !== undefined ? { dataLimitGB: dataLimitBytes === null ? null : dataLimitBytes / (1024 * 1024 * 1024) } : {}),
+        ...(expireDate !== undefined ? { expireAt: expireDate } : {}),
+        ...(nextIpLimit !== undefined ? { ipLimit: nextIpLimit } : {}),
+        ...(status !== undefined ? { status } : {}),
+        ...(referrerId !== undefined ? { referrerId } : {}),
+        ...(isSalesEdit ? { planType: nextPlanType, packageCode: nextPlanType === "UNLIMITED_USAGE" ? nextPackageCode : null, creditCost: nextCreditCost } : {}),
+      },
     });
 
     logger.info("user_updated", `کاربر «${updated.username}» ویرایش شد`, { userId: updated.id, admin: req.admin?.username });
@@ -521,9 +547,10 @@ usersRouter.delete(
 usersRouter.post(
   "/:id/servers/:serverId",
   asyncHandler(async (req: AuthedRequest, res) => {
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id }, include: { links: { include: { server: true } } } });
     const server = await prisma.server.findUnique({ where: { id: req.params.serverId } });
     if (!user || !server) return res.status(404).json({ error: "کاربر یا سرور مورد نظر پیدا نشد" });
+    assertSellerCanEditUser(req, user);
 
     const adapter = getAdapter(server.panelType as any, server);
     const { remoteId, remoteExtra } = await adapter.createUser({
@@ -549,9 +576,10 @@ usersRouter.delete(
   asyncHandler(async (req: AuthedRequest, res) => {
     const link = await prisma.userServerLink.findUnique({
       where: { userId_serverId: { userId: req.params.id, serverId: req.params.serverId } },
-      include: { server: true, user: true },
+      include: { server: true, user: { include: { links: { include: { server: true } } } } },
     });
     if (!link) return res.status(404).json({ error: "این کاربر روی این سرور پیدا نشد" });
+    assertSellerCanEditUser(req, link.user);
 
     const adapter = getAdapter(link.server.panelType as any, link.server);
     const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
@@ -581,9 +609,10 @@ usersRouter.patch(
 
     const link = await prisma.userServerLink.findUnique({
       where: { userId_serverId: { userId: req.params.id, serverId: req.params.serverId } },
-      include: { server: true, user: true },
+      include: { server: true, user: { include: { links: { include: { server: true } } } } },
     });
     if (!link) return res.status(404).json({ error: "این کاربر روی این سرور پیدا نشد" });
+    assertSellerCanEditUser(req, link.user);
 
     const adapter = getAdapter(link.server.panelType as any, link.server);
     const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;

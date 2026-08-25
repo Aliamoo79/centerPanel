@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, getRole } from "../lib/api";
 import { Card, Button, Input, Select, StatusDot, SignalGauge, Modal, Skeleton, LoadingRegion } from "../components/ui";
-import { formatBytes, formatDate, panelLabel } from "../lib/format";
+import { formatBytes, formatDate, formatNumber, panelLabel } from "../lib/format";
 import { useToast } from "../lib/toast";
 
 export default function UserDetail() {
@@ -76,6 +76,7 @@ export default function UserDetail() {
   if (!user) return <UserDetailSkeleton />;
 
   const usage = user.usage;
+  const canEditUser = getRole() !== "SELLER" || user.sellerCanEdit !== false;
   const totalBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
   const linkedServerIds = new Set(user.links.map((l: any) => l.serverId));
   const availableServers = (servers ?? []).filter((s) => !linkedServerIds.has(s.id));
@@ -193,13 +194,14 @@ export default function UserDetail() {
           {user.referrer && <p className="text-muted text-sm mt-1">معرف: {user.referrer.displayName}</p>}
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setEditing((e) => !e)} className="flex-1 sm:flex-none">
+          <Button variant="ghost" onClick={() => setEditing((e) => !e)} disabled={!canEditUser} className="flex-1 sm:flex-none" title={user.sellerEditBlockReason ?? undefined}>
             {editing ? "بستن ویرایش" : "ویرایش"}
           </Button>
           <Button variant="danger" onClick={handleDelete} className="flex-1 sm:flex-none">
             حذف کاربر
           </Button>
         </div>
+        {!canEditUser && <p className="text-xs text-warn mt-3">{user.sellerEditBlockReason}</p>}
       </div>
 
       <Modal open={editing} onClose={() => setEditing(false)} title="ویرایش کاربر">
@@ -282,7 +284,7 @@ export default function UserDetail() {
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
           <h2 className="text-sm font-medium text-muted">سرورهای متصل</h2>
-          {availableServers.length > 0 && (
+          {canEditUser && availableServers.length > 0 && (
             <Select
               defaultValue=""
               onChange={(e) => {
@@ -328,12 +330,13 @@ export default function UserDetail() {
               <div className="flex items-center gap-2 shrink-0">
                 <Button
                   variant="ghost"
+                  disabled={!canEditUser}
                   onClick={() => toggleServerLink(ps.serverId, !ps.enabled)}
                   className={ps.enabled ? "" : "text-warn"}
                 >
                   {ps.enabled ? "غیرفعال کردن" : "فعال کردن"}
                 </Button>
-                <Button variant="ghost" onClick={() => removeServer(ps.serverId)}>
+                <Button variant="ghost" disabled={!canEditUser} onClick={() => removeServer(ps.serverId)}>
                   جدا کردن
                 </Button>
               </div>
@@ -408,11 +411,11 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
     <Card className="p-4 sm:p-5">
       <form onSubmit={onSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
         <div className="sm:col-span-2 lg:col-span-4">
-          <label className="block text-xs text-muted mb-1.5">Ù…ÙˆØ¯ Ø·Ø±Ø­ ÙØ±ÙˆØ´</label>
+          <label className="block text-xs text-muted mb-1.5">نوع طرح فروش</label>
           <Select value={planType} onChange={(e) => setPlanType(e.target.value as typeof planType)}>
-            <option value="">Ø¨Ø¯ÙˆÙ† Ø·Ø±Ø­ ÙØ±ÙˆØ´ (Ù‚Ø¯ÛŒÙ…ÛŒ)</option>
-            <option value="UNLIMITED_USER">Ú©Ø§Ø±Ø¨Ø± Ù†Ø§Ù…Ø­Ø¯ÙˆØ¯ — Ø­Ø¬Ù…ÛŒ</option>
-            <option value="UNLIMITED_USAGE">Ù…ØµØ±Ù Ù†Ø§Ù…Ø­Ø¯ÙˆØ¯ — Ø¨Ø³ØªÙ‡ Ø§Ø´ØªØ±Ø§Ú©</option>
+            <option value="">بدون طرح فروش (قدیمی)</option>
+            <option value="UNLIMITED_USER">کاربر نامحدود — حجمی</option>
+            <option value="UNLIMITED_USAGE">مصرف نامحدود — بسته اشتراک</option>
           </Select>
         </div>
         <div>
@@ -420,12 +423,12 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
           <Input type="number" value={dataLimitGB} onChange={(e) => setDataLimitGB(e.target.value)} dir="ltr" />
         </div>
         {planType === "UNLIMITED_USAGE" && <div className="sm:col-span-2 lg:col-span-4">
-          <label className="block text-xs text-muted mb-1.5">Ø¨Ø³ØªÙ‡</label>
+          <label className="block text-xs text-muted mb-1.5">بسته اشتراک</label>
           <Select value={packageCode} onChange={(e) => setPackageCode(e.target.value)}>
-            <option value="1M_1U">Û± Ù…Ø§Ù‡ / Û± Ú©Ø§Ø±Ø¨Ø± — IP 3</option>
-            <option value="1M_2U">Û± Ù…Ø§Ù‡ / Û² Ú©Ø§Ø±Ø¨Ø± — IP 5</option>
-            <option value="2M_1U">Û² Ù…Ø§Ù‡ / Û± Ú©Ø§Ø±Ø¨Ø± — IP 3</option>
-            <option value="2M_2U">Û² Ù…Ø§Ù‡ / Û² Ú©Ø§Ø±Ø¨Ø± — IP 5</option>
+            <option value="1M_1U">1 ماه / 1 کاربر — IP 3</option>
+            <option value="1M_2U">1 ماه / 2 کاربر — IP 5</option>
+            <option value="2M_1U">2 ماه / 1 کاربر — IP 3</option>
+            <option value="2M_2U">2 ماه / 2 کاربر — IP 5</option>
           </Select>
         </div>}
         <div>
@@ -445,8 +448,8 @@ function EditUserForm({ user, onSaved }: { user: any; onSaved: (failed?: { serve
         </div>
         {error && <p className="sm:col-span-2 lg:col-span-4 text-danger text-sm">{error}</p>}
         {planType && <div className="sm:col-span-2 lg:col-span-4 rounded-lg border border-line bg-panel2/60 px-3 py-2 text-xs flex flex-wrap justify-between gap-2">
-          <span className="text-muted">هزینه جدید: <span className="font-nums text-white" dir="ltr">{estimatedCost.toLocaleString("fa-IR")}</span> هزار تومان</span>
-          <span className={creditDelta > 0 ? "text-warn" : "text-mint"}>{creditDelta > 0 ? "کاهش اعتبار" : creditDelta < 0 ? "برگشت اعتبار" : "بدون تغییر اعتبار"}: {Math.abs(creditDelta).toLocaleString("fa-IR")} هزار تومان</span>
+          <span className="text-muted">هزینه جدید: <span className="font-nums text-white" dir="ltr">{formatNumber(estimatedCost)}</span> هزار تومان</span>
+          <span className={creditDelta > 0 ? "text-warn" : "text-mint"}>{creditDelta > 0 ? "کاهش اعتبار" : creditDelta < 0 ? "برگشت اعتبار" : "بدون تغییر اعتبار"}: {formatNumber(Math.abs(creditDelta))} هزار تومان</span>
         </div>}
         <div className="sticky bottom-0 z-10 -mx-4 sm:-mx-5 sm:col-span-2 lg:col-span-4 border-t border-line bg-panel/95 px-4 sm:px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <Button type="submit" disabled={saving} className="w-full sm:w-auto">

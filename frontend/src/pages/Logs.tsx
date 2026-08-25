@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { Card, Button, Select, Skeleton, LoadingRegion } from "../components/ui";
 import { useToast } from "../lib/toast";
+import { formatDateTime } from "../lib/format";
 
 interface LogEntry {
   id: number;
@@ -96,7 +97,7 @@ export default function Logs() {
                 <span className="flex-1 min-w-0">
                   <span className="text-sm text-white block break-words">{e.message}</span>
                   <span className="text-xs text-muted font-nums mt-0.5 block">
-                    {new Date(e.ts).toLocaleString("fa-IR")} · {e.event}
+                    {formatDateTime(e.ts)} · {e.event}
                   </span>
                 </span>
               </button>
