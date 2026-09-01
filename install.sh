@@ -108,8 +108,8 @@ chmod 600 "$ROOT_DIR/backend/.env"
 chown "$SERVICE_USER":"$(id -gn "$SERVICE_USER")" "$ROOT_DIR/backend/.env"
 
 echo "Installing dependencies and building the application..."
-npm ci --prefix "$ROOT_DIR/backend"
-npm ci --prefix "$ROOT_DIR/frontend"
+npm ci --prefer-offline --no-audit --prefix "$ROOT_DIR/backend"
+npm ci --prefer-offline --no-audit --prefix "$ROOT_DIR/frontend"
 (
   cd "$ROOT_DIR/backend"
   npx prisma generate
