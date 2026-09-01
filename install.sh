@@ -107,18 +107,24 @@ EOF
 chmod 600 "$ROOT_DIR/backend/.env"
 chown "$SERVICE_USER":"$(id -gn "$SERVICE_USER")" "$ROOT_DIR/backend/.env"
 
+# Keep the application tree usable by the service user. The installer runs as
+# root, but dependency installation, Prisma, and redeploys must not leave
+# root-owned files behind.
+SERVICE_GROUP="$(id -gn "$SERVICE_USER")"
+chown -R "$SERVICE_USER":"$SERVICE_GROUP" "$ROOT_DIR"
+chmod 600 "$ROOT_DIR/backend/.env"
+
 echo "Installing dependencies and building the application..."
-npm ci --prefer-offline --no-audit --prefix "$ROOT_DIR/backend"
-npm ci --prefer-offline --no-audit --prefix "$ROOT_DIR/frontend"
+runuser -u "$SERVICE_USER" -- npm ci --prefer-offline --no-audit --prefix "$ROOT_DIR/backend"
+runuser -u "$SERVICE_USER" -- npm ci --prefer-offline --no-audit --prefix "$ROOT_DIR/frontend"
 (
   cd "$ROOT_DIR/backend"
-  npx prisma generate
-  npx prisma migrate deploy
-  npm run seed
-  npm run build
+  runuser -u "$SERVICE_USER" -- npx prisma generate
+  runuser -u "$SERVICE_USER" -- npx prisma migrate deploy
+  runuser -u "$SERVICE_USER" -- npm run seed
+  runuser -u "$SERVICE_USER" -- npm run build
 )
-npm run build --prefix "$ROOT_DIR/frontend"
-chown -R "$SERVICE_USER":"$(id -gn "$SERVICE_USER")" "$ROOT_DIR/backend/prisma" "$ROOT_DIR/backend/dist"
+runuser -u "$SERVICE_USER" -- npm run build --prefix "$ROOT_DIR/frontend"
 
 cat > "/etc/systemd/system/$APP_NAME.service" <<EOF
 [Unit]
