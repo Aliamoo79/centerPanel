@@ -194,9 +194,6 @@ export default function UserDetail() {
           {user.referrer && <p className="text-muted text-sm mt-1">معرف: {user.referrer.displayName}</p>}
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setEditing((e) => !e)} disabled={!canEditUser} className="flex-1 sm:flex-none" title={user.sellerEditBlockReason ?? undefined}>
-            {editing ? "بستن ویرایش" : "ویرایش"}
-          </Button>
           <Button variant="danger" onClick={handleDelete} className="flex-1 sm:flex-none">
             حذف کاربر
           </Button>
@@ -260,14 +257,6 @@ export default function UserDetail() {
       <Card className="p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3 mb-3">
           <p className="text-xs text-muted">مصرف کل (همه‌ی سرورها)</p>
-          <Button
-            variant="ghost"
-            onClick={resetUsage}
-            disabled={resettingUsage || user.links.length === 0}
-            className="shrink-0 border-warn/40 text-warn hover:bg-warn/10"
-          >
-            {resettingUsage ? "در حال صفر کردن..." : "صفر کردن مصرف"}
-          </Button>
         </div>
         <SignalGauge
           used={usage?.usedBytes ?? 0}
