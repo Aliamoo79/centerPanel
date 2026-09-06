@@ -66,6 +66,8 @@ export const api = {
   listServers: () => request<any[]>("/servers"),
   createServer: (data: any) => request<any>("/servers", { method: "POST", body: JSON.stringify(data) }),
   updateServer: (id: string, data: any) => request<any>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  setServerEnabled: (id: string, enabled: boolean) =>
+    request<any>(`/servers/${id}/status`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
   deleteServer: (id: string) => request<void>(`/servers/${id}`, { method: "DELETE" }),
   testServer: (id: string) => request<{ ok: boolean; message?: string }>(`/servers/${id}/test`, { method: "POST" }),
 

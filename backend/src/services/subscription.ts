@@ -86,7 +86,7 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
   const seenConfigUris = new Set<string>();
 
   if (status === "ACTIVE") {
-    const enabledLinks = user.links.filter((link) => link.enabled);
+    const enabledLinks = user.links.filter((link) => link.enabled && link.server.status === "ACTIVE");
     const results = await Promise.all(enabledLinks.map(async (link) => {
       try {
         const adapter = getAdapter(link.server.panelType as any, link.server);

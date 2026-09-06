@@ -71,7 +71,7 @@ function cachedUserUsage(user: any) {
       usedBytes: link.usedBytes,
       dataLimitBytes: null,
       expireAt: null,
-      enabled: link.enabled,
+      enabled: link.enabled && link.server.status === "ACTIVE",
       lastSyncedAt: link.lastSyncedAt,
     })),
   };
@@ -207,7 +207,8 @@ usersRouter.post(
       if (!referrer) return res.status(400).json({ error: "Referrer not found" });
     }
 
-    const servers = await prisma.server.findMany({ where: { id: { in: serverIds } } });
+    const servers = await prisma.server.findMany({ where: { id: { in: serverIds }, status: "ACTIVE" } });
+    if (servers.length !== serverIds.length) return res.status(400).json({ error: "یکی از سرورهای انتخاب‌شده غیرفعال است" });
     if (servers.length === 0) return res.status(400).json({ error: "هیچ سروری پیدا نشد" });
 
     const user = await prisma.user.create({
@@ -399,6 +400,7 @@ usersRouter.post(
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     const server = await prisma.server.findUnique({ where: { id: req.params.serverId } });
     if (!user || !server) return res.status(404).json({ error: "کاربر یا سرور مورد نظر پیدا نشد" });
+    if (server.status !== "ACTIVE") return res.status(400).json({ error: "این سرور غیرفعال است" });
 
     const adapter = getAdapter(server.panelType as any, server);
     const { remoteId, remoteExtra } = await adapter.createUser({

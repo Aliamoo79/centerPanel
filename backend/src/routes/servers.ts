@@ -5,6 +5,7 @@ import { requireAdmin, AuthedRequest } from "../middleware/auth";
 import { getAdapter } from "../adapters";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
+import { describePanelError } from "../lib/errors";
 
 export const serversRouter = Router();
 serversRouter.use(requireAdmin);
@@ -118,6 +119,62 @@ serversRouter.patch(
     });
     logger.info("server_updated", `سرور «${server.name}» ویرایش شد`, { serverId: server.id, admin: req.admin?.username });
     res.json(toPublic(server));
+  })
+);
+
+// Temporarily disable or restore every user configuration attached to this
+// server. The per-user link preference is kept intact so re-enabling the
+// server does not restore users who were individually disabled.
+serversRouter.patch(
+  "/:id/status",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const parsed = z.object({ enabled: z.boolean() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const server = await prisma.server.findUnique({
+      where: { id: req.params.id },
+      include: { links: true },
+    });
+    if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+
+    const enable = parsed.data.enabled;
+    const targetStatus = enable ? "ACTIVE" : "DISABLED";
+    const links = server.links.filter((link) => link.enabled);
+
+    // Block new polling/config requests immediately while remote state is
+    // being fanned out to every linked account.
+    if (!enable) {
+      await prisma.server.update({ where: { id: server.id }, data: { status: targetStatus } });
+    }
+
+    const results = await Promise.allSettled(links.map(async (link) => {
+      const adapter = getAdapter(server.panelType as any, server);
+      const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+      await adapter.setEnabled(link.remoteId, enable, remoteExtra);
+    }));
+    const failures = results
+      .map((result, index) => result.status === "rejected"
+        ? { userLinkId: links[index].id, error: describePanelError(result.reason) }
+        : null)
+      .filter(Boolean);
+
+    if (enable && failures.length > 0) {
+      return res.status(502).json({
+        error: "برخی کاربران روی پنل فعال نشدند؛ سرور همچنان غیرفعال است",
+        failures,
+      });
+    }
+
+    const updated = await prisma.server.update({
+      where: { id: server.id },
+      data: { status: targetStatus },
+    });
+    logger.info(
+      enable ? "server_enabled" : "server_disabled",
+      `سرور «${server.name}» برای ${links.length} کاربر ${enable ? "فعال" : "غیرفعال"} شد`,
+      { serverId: server.id, failedCount: failures.length, admin: req.admin?.username },
+    );
+    res.json({ ...toPublic(updated), failures });
   })
 );
 

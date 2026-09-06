@@ -47,6 +47,20 @@ export default function Servers() {
     }
   }
 
+  async function handleToggle(s: any) {
+    const enabled = s.status !== "ACTIVE";
+    const action = enabled ? "فعال" : "غیرفعال";
+    if (!confirm(`این سرور برای همه کاربران ${action} شود؟`)) return;
+    try {
+      await api.setServerEnabled(s.id, enabled);
+      reload();
+      toast.success(`سرور برای همه کاربران ${action} شد`);
+    } catch (err: any) {
+      toast.error(err.message ?? `تغییر وضعیت سرور ناموفق بود`);
+      reload();
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -115,6 +129,9 @@ export default function Servers() {
                 )}
                 <Button variant="ghost" onClick={() => handleTest(s.id)}>
                   تست اتصال
+                </Button>
+                <Button variant="ghost" onClick={() => handleToggle(s)}>
+                  {s.status === "ACTIVE" ? "غیرفعال کردن برای همه" : "فعال کردن برای همه"}
                 </Button>
                 <Button
                   variant="ghost"

@@ -128,7 +128,7 @@ async function performUserUsageSync(userId: string, prefetchedStates?: Prefetche
   for (const link of user.links) {
     // A server-level disabled link must not trigger any remote polling. Keep
     // its last local snapshot below, but only batch active links.
-    if (!link.enabled) continue;
+    if (!link.enabled || link.server.status !== "ACTIVE") continue;
     const group = linksByServer.get(link.serverId) ?? [];
     group.push(link);
     linksByServer.set(link.serverId, group);
@@ -172,7 +172,7 @@ async function performUserUsageSync(userId: string, prefetchedStates?: Prefetche
 
   // Disabled links retain their last known usage for display and aggregation,
   // without contacting their panel.
-  for (const link of user.links.filter((item) => !item.enabled)) {
+  for (const link of user.links.filter((item) => !item.enabled || item.server.status !== "ACTIVE")) {
     const remoteAccountKey = link.server.panelType === "THREEXUI"
       ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
       : `${link.server.id}:${link.remoteId}`;
@@ -186,14 +186,14 @@ async function performUserUsageSync(userId: string, prefetchedStates?: Prefetche
       usedBytes: link.usedBytes,
       dataLimitBytes: null,
       expireAt: null,
-      enabled: false,
+      enabled: link.enabled && link.server.status === "ACTIVE",
     });
   }
 
   const dataLimitBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
 
   if (dataLimitBytes !== null && totalUsed >= dataLimitBytes) {
-    const linksToDisable = user.links.filter((link) => link.enabled);
+    const linksToDisable = user.links.filter((link) => link.enabled && link.server.status === "ACTIVE");
     const results = await Promise.allSettled(
       linksToDisable.map(async (link) => {
         const adapter = getAdapter(link.server.panelType as any, link.server);
@@ -252,7 +252,7 @@ async function prefetchBatchStates(users: any[]): Promise<PrefetchedStates> {
 
   for (const user of users) {
     for (const link of user.links) {
-      if (!link.enabled) continue;
+      if (!link.enabled || link.server.status !== "ACTIVE") continue;
       const group = linksByServer.get(link.serverId) ?? [];
       group.push(link);
       linksByServer.set(link.serverId, group);
