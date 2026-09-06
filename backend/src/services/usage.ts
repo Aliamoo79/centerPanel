@@ -62,6 +62,14 @@ async function performUserUsageSync(userId: string, prefetchedStates?: Prefetche
     ? userSyncProgress.get(userId)!
     : beginUserUsageSync(userId, user.links.map((link) => link.serverId));
 
+  // Disabled servers are intentionally never polled. Mark their rows as
+  // completed immediately so the user-detail page renders cached usage
+  // instead of waiting forever for a request that must not be sent.
+  for (const link of user.links) {
+    if (link.enabled && link.server.status === "ACTIVE") continue;
+    progress.servers[link.serverId] = { status: "success" };
+  }
+
   const perServer: AggregatedUsage["perServer"] = [];
   let totalUsed = 0;
   const countedRemoteAccounts = new Set<string>();

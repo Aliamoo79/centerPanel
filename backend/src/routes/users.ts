@@ -122,7 +122,10 @@ usersRouter.get(
 usersRouter.post(
   "/:id/usage/refresh",
   asyncHandler(async (req, res) => {
-    const links = await prisma.userServerLink.findMany({ where: { userId: req.params.id }, select: { serverId: true } });
+    const links = await prisma.userServerLink.findMany({
+      where: { userId: req.params.id, enabled: true, server: { status: "ACTIVE" } },
+      select: { serverId: true },
+    });
     const user = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true } });
     if (!user) return res.status(404).json({ error: "کاربر مورد نظر پیدا نشد" });
     const progress = beginUserUsageSync(user.id, links.map((link) => link.serverId));

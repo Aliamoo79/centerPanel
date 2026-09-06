@@ -115,7 +115,7 @@ export default function Servers() {
                 <StatusDot ok={testResults[s.id]?.ok ?? s.status === "ACTIVE"} pulse />
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{s.name}</p>
-                  <p className="text-xs text-muted font-nums mt-0.5 truncate">
+                  <p className="text-xs text-muted font-nums mt-0.5 truncate whitespace-nowrap">
                     {panelLabel(s.panelType)} · {s.baseUrl} · {s._count?.links ?? 0} کاربر
                     {s.remarkPrefix && <> · remark: {s.remarkPrefix}-name</>}
                   </p>
