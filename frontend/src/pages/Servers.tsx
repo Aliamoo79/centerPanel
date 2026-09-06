@@ -110,7 +110,7 @@ export default function Servers() {
         )}
         {servers?.map((s) => (
           <Card key={s.id} className="p-4 sm:p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div className="flex items-center gap-3 min-w-0">
                 <StatusDot ok={testResults[s.id]?.ok ?? s.status === "ACTIVE"} pulse />
                 <div className="min-w-0">
@@ -121,20 +121,21 @@ export default function Servers() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:justify-end">
                 {testResults[s.id] && (
                   <span className={`text-xs font-nums ${testResults[s.id].ok ? "text-mint" : "text-danger"}`}>
                     {testResults[s.id].ok ? "متصل" : testResults[s.id].message}
                   </span>
                 )}
-                <Button variant="ghost" onClick={() => handleTest(s.id)}>
+                <Button variant="ghost" className="whitespace-nowrap" onClick={() => handleTest(s.id)}>
                   تست اتصال
                 </Button>
-                <Button variant="ghost" onClick={() => handleToggle(s)}>
+                <Button variant="ghost" className="whitespace-nowrap" onClick={() => handleToggle(s)}>
                   {s.status === "ACTIVE" ? "غیرفعال کردن برای همه" : "فعال کردن برای همه"}
                 </Button>
                 <Button
                   variant="ghost"
+                  className="whitespace-nowrap"
                   onClick={() => {
                     setEditing(s);
                     setShowForm(true);
@@ -142,7 +143,7 @@ export default function Servers() {
                 >
                   ویرایش
                 </Button>
-                <Button variant="danger" onClick={() => handleDelete(s.id)}>
+                <Button variant="danger" className="whitespace-nowrap" onClick={() => handleDelete(s.id)}>
                   حذف
                 </Button>
               </div>
