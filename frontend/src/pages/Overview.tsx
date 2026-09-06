@@ -38,9 +38,9 @@ export default function Overview() {
     return total > 0 && total - userUsedBytes(u) < total * 0.2;
   }) ?? [];
   const attentionWithUsage = [
-    ...expired.map((u) => ({ ...u, issue: "Ù…Ù†Ù‚Ø¶ÛŒ Ø´Ø¯Ù‡", tone: "danger" })),
-    ...lowUsage.filter((u) => !expired.some((item) => item.id === u.id)).map((u) => ({ ...u, issue: "Ú©Ù…ØªØ± Ø§Ø² Û²Û°٪ Ø­Ø¬Ù… Ø¨Ø§Ù‚ÛŒ Ù…Ø§Ù†Ø¯Ù‡", tone: "danger" })),
-    ...expiring.filter((u) => !lowUsage.some((item) => item.id === u.id)).map((u) => ({ ...u, issue: `${daysLeft(u.expireAt)} Ø±ÙˆØ² Ù…Ø§Ù†Ø¯Ù‡`, tone: "warn" })),
+    ...expired.map((u) => ({ ...u, issue: "منقضی شده", tone: "danger" })),
+    ...lowUsage.filter((u) => !expired.some((item) => item.id === u.id)).map((u) => ({ ...u, issue: "کمتر از ۲۰٪ حجم باقی مانده", tone: "danger" })),
+    ...expiring.filter((u) => !lowUsage.some((item) => item.id === u.id)).map((u) => ({ ...u, issue: `${daysLeft(u.expireAt)} روز مانده`, tone: "warn" })),
   ];
   attention.splice(0, attention.length, ...attentionWithUsage);
   const activeServers = servers?.filter((s) => s.status === "ACTIVE").length ?? 0;
