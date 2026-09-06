@@ -169,7 +169,15 @@ export default function Users() {
                 </tr>
               ))}
               {visibleUsers.map((user) => {
-                const used = user.links?.reduce((sum: number, link: any) => sum + (link.usedBytes ?? 0), 0) ?? 0;
+                const seenRemoteAccounts = new Set<string>();
+                const used = [...(user.links ?? [])].sort((a: any, b: any) => Number(b.enabled) - Number(a.enabled)).reduce((sum: number, link: any) => {
+                  const key = link.server?.panelType === "THREEXUI"
+                    ? `THREEXUI:${String(link.server.baseUrl ?? "").replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+                    : `${link.serverId}:${link.remoteId}`;
+                  if (seenRemoteAccounts.has(key)) return sum;
+                  seenRemoteAccounts.add(key);
+                  return sum + (link.usedBytes ?? 0);
+                }, 0) ?? 0;
                 const total = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
                 return (
                   <tr
