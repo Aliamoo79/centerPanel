@@ -2,6 +2,7 @@ import { prisma } from "../db";
 import { getAdapter } from "../adapters";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
+import { RemoteUserState } from "../adapters/types";
 
 export interface AggregatedUsage {
   usedBytes: number;
@@ -26,6 +27,8 @@ export interface UsageSyncProgress {
 
 const userSyncProgress = new Map<string, UsageSyncProgress>();
 const activeUserSyncs = new Map<string, Promise<AggregatedUsage>>();
+type PrefetchedState = { state?: RemoteUserState; error?: unknown };
+type PrefetchedStates = Map<string, PrefetchedState>;
 
 export function beginUserUsageSync(userId: string, serverIds: string[]): UsageSyncProgress {
   const current = userSyncProgress.get(userId);
@@ -50,7 +53,7 @@ export function getUserUsageSyncProgress(userId: string): UsageSyncProgress | nu
  * temporarily down just gets flagged with `error` and its last-known
  * cached usedBytes is used instead.
  */
-async function performUserUsageSync(userId: string): Promise<AggregatedUsage> {
+async function performUserUsageSync(userId: string, prefetchedStates?: PrefetchedStates): Promise<AggregatedUsage> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
     include: { links: { include: { server: true } } },
@@ -63,12 +66,10 @@ async function performUserUsageSync(userId: string): Promise<AggregatedUsage> {
   let totalUsed = 0;
   const countedRemoteAccounts = new Set<string>();
 
-  await Promise.all(user.links.map(async (link) => {
+  const saveLinkState = async (link: any, state: any, error?: any) => {
     try {
-      const adapter = getAdapter(link.server.panelType as any, link.server);
-      const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
-      const state = await adapter.getUserState(link.remoteId, remoteExtra);
-
+      if (error) throw error;
+      if (!state) throw new Error(`No usage state returned for ${link.remoteId}`);
       await prisma.userServerLink.update({
         where: { id: link.id },
         data: { usedBytes: state.usedBytes, lastSyncedAt: new Date() },
@@ -118,7 +119,76 @@ async function performUserUsageSync(userId: string): Promise<AggregatedUsage> {
         error: message,
       });
     }
+  };
+
+  // Batch-capable adapters are called once per server (and, for 3x-ui, once
+  // per distinct inbound), instead of once per user. Other panel adapters
+  // retain their existing per-user behavior.
+  const linksByServer = new Map<string, any[]>();
+  for (const link of user.links) {
+    // A server-level disabled link must not trigger any remote polling. Keep
+    // its last local snapshot below, but only batch active links.
+    if (!link.enabled) continue;
+    const group = linksByServer.get(link.serverId) ?? [];
+    group.push(link);
+    linksByServer.set(link.serverId, group);
+  }
+
+  await Promise.all([...linksByServer.values()].map(async (links) => {
+    const first = links[0];
+    const adapter = getAdapter(first.server.panelType as any, first.server);
+    const batch = adapter.getUsersState;
+
+    if (batch) {
+      const prefetched = links.map((link) => prefetchedStates?.get(link.id));
+      if (prefetchedStates && prefetched.every((item) => item !== undefined)) {
+        await Promise.all(links.map((link, index) => {
+          const item = prefetched[index]!;
+          return saveLinkState(link, item.state, item.error);
+        }));
+        return;
+      }
+      try {
+        const states = await batch.call(adapter, links.map((link) => ({
+          remoteId: link.remoteId,
+          remoteExtra: link.remoteExtra ? JSON.parse(link.remoteExtra) : null,
+        })));
+        await Promise.all(links.map((link) => saveLinkState(link, states[link.remoteId])));
+      } catch (err: any) {
+        await Promise.all(links.map((link) => saveLinkState(link, null, err)));
+      }
+      return;
+    }
+
+    await Promise.all(links.map(async (link) => {
+      try {
+        const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+        await saveLinkState(link, await adapter.getUserState(link.remoteId, remoteExtra));
+      } catch (err: any) {
+        await saveLinkState(link, null, err);
+      }
+    }));
   }));
+
+  // Disabled links retain their last known usage for display and aggregation,
+  // without contacting their panel.
+  for (const link of user.links.filter((item) => !item.enabled)) {
+    const remoteAccountKey = link.server.panelType === "THREEXUI"
+      ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+      : `${link.server.id}:${link.remoteId}`;
+    if (!countedRemoteAccounts.has(remoteAccountKey)) {
+      totalUsed += link.usedBytes;
+      countedRemoteAccounts.add(remoteAccountKey);
+    }
+    perServer.push({
+      serverId: link.server.id,
+      serverName: link.server.name,
+      usedBytes: link.usedBytes,
+      dataLimitBytes: null,
+      expireAt: null,
+      enabled: false,
+    });
+  }
 
   const dataLimitBytes = user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null;
 
@@ -162,10 +232,10 @@ async function performUserUsageSync(userId: string): Promise<AggregatedUsage> {
   };
 }
 
-export function syncUserUsage(userId: string): Promise<AggregatedUsage> {
+export function syncUserUsage(userId: string, prefetchedStates?: PrefetchedStates): Promise<AggregatedUsage> {
   const active = activeUserSyncs.get(userId);
   if (active) return active;
-  const run = performUserUsageSync(userId).finally(() => {
+  const run = performUserUsageSync(userId, prefetchedStates).finally(() => {
     const progress = userSyncProgress.get(userId);
     if (progress) progress.running = false;
     activeUserSyncs.delete(userId);
@@ -176,18 +246,55 @@ export function syncUserUsage(userId: string): Promise<AggregatedUsage> {
 
 let allUsersSync: Promise<void> | null = null;
 
+async function prefetchBatchStates(users: any[]): Promise<PrefetchedStates> {
+  const result: PrefetchedStates = new Map();
+  const linksByServer = new Map<string, any[]>();
+
+  for (const user of users) {
+    for (const link of user.links) {
+      if (!link.enabled) continue;
+      const group = linksByServer.get(link.serverId) ?? [];
+      group.push(link);
+      linksByServer.set(link.serverId, group);
+    }
+  }
+
+  await Promise.all([...linksByServer.values()].map(async (links) => {
+    const first = links[0];
+    const adapter = getAdapter(first.server.panelType as any, first.server);
+    if (!adapter.getUsersState) return;
+
+    try {
+      const states = await adapter.getUsersState(links.map((link) => ({
+        remoteId: link.remoteId,
+        remoteExtra: link.remoteExtra ? JSON.parse(link.remoteExtra) : null,
+      })));
+      for (const link of links) {
+        result.set(link.id, { state: states[link.remoteId] });
+      }
+    } catch (error) {
+      for (const link of links) result.set(link.id, { error });
+    }
+  }));
+
+  return result;
+}
+
 /** Refresh every cached usage snapshot without duplicating overlapping runs. */
 export function syncAllUserUsage(concurrency = 5): Promise<void> {
   if (allUsersSync) return allUsersSync;
 
   allUsersSync = (async () => {
-    const users = await prisma.user.findMany({ select: { id: true } });
+    const users = await prisma.user.findMany({
+      include: { links: { include: { server: true } } },
+    });
+    const prefetchedStates = await prefetchBatchStates(users);
     let nextIndex = 0;
 
     async function worker() {
       while (nextIndex < users.length) {
         const user = users[nextIndex++];
-        await syncUserUsage(user.id).catch((err) => {
+        await syncUserUsage(user.id, prefetchedStates).catch((err) => {
           logger.warn("user_usage_background_sync_failed", describePanelError(err), { userId: user.id });
         });
       }

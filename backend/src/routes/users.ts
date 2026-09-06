@@ -50,7 +50,9 @@ function findPublicUsers() {
 function cachedUserUsage(user: any) {
   let usedBytes = 0;
   const countedRemoteAccounts = new Set<string>();
-  for (const link of user.links) {
+  // Prefer an enabled/current link when the same 3x-ui client is attached to
+  // multiple local server rows. Disabled rows only contain a cached snapshot.
+  for (const link of [...user.links].sort((a: any, b: any) => Number(b.enabled) - Number(a.enabled))) {
     const key = link.server.panelType === "THREEXUI"
       ? `THREEXUI:${link.server.baseUrl.replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
       : `${link.serverId}:${link.remoteId}`;

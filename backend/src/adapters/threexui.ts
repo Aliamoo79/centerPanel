@@ -225,6 +225,63 @@ export class ThreeXUIAdapter implements PanelAdapter {
     };
   }
 
+  /**
+   * Read usage for every requested client using one inbound-list request.
+   * 3x-ui includes clientStats in the inbound response, so polling the
+   * per-client traffic endpoint is unnecessary for the normal v3 API.
+   */
+  async getUsersState(
+    users: { remoteId: string; remoteExtra?: Record<string, unknown> | null }[]
+  ): Promise<Record<string, RemoteUserState>> {
+    const result: Record<string, RemoteUserState> = {};
+    const c = await this.authedClient();
+    const response = await c.get("/panel/api/inbounds/list");
+    const inbounds = Array.isArray(response.data?.obj) ? response.data.obj : [];
+
+    for (const user of users) {
+      const inboundId = Number(user.remoteExtra?.inboundId) || this.inboundId;
+      const raw = inbounds.find((item: any) => Number(item.id) === inboundId);
+      if (!raw) continue;
+      const settings = typeof raw.settings === "string" ? JSON.parse(raw.settings || "{}") : (raw.settings ?? {});
+      const inbound = { ...raw, clients: settings.clients ?? [] };
+      const clients = Array.isArray(inbound.clients) ? inbound.clients : [];
+      const stats = Array.isArray(inbound.clientStats) ? inbound.clientStats : [];
+
+      const usersForInbound = users.filter((item) => {
+        const id = Number(item.remoteExtra?.inboundId) || this.inboundId;
+        return id === inboundId;
+      });
+      for (const item of usersForInbound) {
+        if (result[item.remoteId]) continue;
+        const client = clients.find((entry: any) => entry.email === item.remoteId);
+        const stat = stats.find((entry: any) => entry.email === item.remoteId || entry.id === client?.id);
+        if (!client && !stat) continue;
+
+        const up = Number(stat?.up ?? client?.up ?? 0);
+        const down = Number(stat?.down ?? client?.down ?? 0);
+        const total = stat?.total ?? client?.totalGB ?? 0;
+        const expiryTime = stat?.expiryTime ?? client?.expiryTime ?? 0;
+        result[item.remoteId] = {
+          remoteId: item.remoteId,
+          usedBytes: up + down,
+          dataLimitBytes: total ? Number(total) : null,
+          expireAt: expiryTime ? new Date(Number(expiryTime)) : null,
+          enabled: stat?.enable ?? client?.enable ?? true,
+          ipLimit: client?.limitIp ? Number(client.limitIp) : null,
+        };
+      }
+    }
+
+    // Missing records are returned as errors by the caller, just as a failed
+    // per-client traffic request would be. Do not issue extra requests here.
+    for (const user of users) {
+      if (!result[user.remoteId]) {
+        throw new Error(`کاربر ${user.remoteId} روی پنل 3x-ui پیدا نشد`);
+      }
+    }
+    return result;
+  }
+
   private async mergeAndPush(
     remoteId: string,
     changes: Record<string, any>

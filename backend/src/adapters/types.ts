@@ -50,6 +50,12 @@ export interface PanelAdapter {
   /** Fetch current usage / limit / expiry / enabled state for an existing account */
   getUserState(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteUserState>;
 
+  /**
+   * Optional bulk usage read. Adapters that support it can return several
+   * accounts from one panel request instead of making one request per user.
+   */
+  getUsersState?(users: { remoteId: string; remoteExtra?: Record<string, unknown> | null }[]): Promise<Record<string, RemoteUserState>>;
+
   /** Update data limit and/or expiry on an existing account */
   updateUser(
     remoteId: string,
