@@ -28,10 +28,21 @@ export default function Overview() {
     return () => { window.clearInterval(cacheRefresh); window.clearInterval(usageRefresh); };
   }, []);
 
-  const totalUsage = users?.reduce((sum, u) => sum + (u.links?.reduce((s: number, l: any) => s + (l.usedBytes ?? 0), 0) ?? 0), 0) ?? 0;
+  const totalUsage = users?.reduce((sum, u) => sum + userUsedBytes(u), 0) ?? 0;
   const expired = users?.filter(isExpiredUser) ?? [];
   const expiring = users?.filter((u) => { const d = daysLeft(u.expireAt); return !isExpiredUser(u) && d !== null && d <= 3 && d >= 0; }) ?? [];
   const attention = [...expired.map((u) => ({ ...u, issue: "منقضی شده", tone: "danger" })), ...expiring.map((u) => ({ ...u, issue: `${daysLeft(u.expireAt)} روز مانده`, tone: "warn" }))];
+  const lowUsage = users?.filter((u) => {
+    if (isExpiredUser(u) || !u.dataLimitGB) return false;
+    const total = u.dataLimitGB * 1024 ** 3;
+    return total > 0 && total - userUsedBytes(u) < total * 0.2;
+  }) ?? [];
+  const attentionWithUsage = [
+    ...expired.map((u) => ({ ...u, issue: "Ù…Ù†Ù‚Ø¶ÛŒ Ø´Ø¯Ù‡", tone: "danger" })),
+    ...lowUsage.filter((u) => !expired.some((item) => item.id === u.id)).map((u) => ({ ...u, issue: "Ú©Ù…ØªØ± Ø§Ø² Û²Û°٪ Ø­Ø¬Ù… Ø¨Ø§Ù‚ÛŒ Ù…Ø§Ù†Ø¯Ù‡", tone: "danger" })),
+    ...expiring.filter((u) => !lowUsage.some((item) => item.id === u.id)).map((u) => ({ ...u, issue: `${daysLeft(u.expireAt)} Ø±ÙˆØ² Ù…Ø§Ù†Ø¯Ù‡`, tone: "warn" })),
+  ];
+  attention.splice(0, attention.length, ...attentionWithUsage);
   const activeServers = servers?.filter((s) => s.status === "ACTIVE").length ?? 0;
 
   return <div className="space-y-8">
@@ -66,7 +77,7 @@ export default function Overview() {
       <section>
         <div className="flex items-center justify-between mb-3"><h2 className="font-semibold">صف رسیدگی</h2><span className="font-nums text-xs text-muted">{attention.length}</span></div>
         <Card className="overflow-hidden">
-          {userError && users === null ? <ErrorRegion resource="کاربران" onRetry={() => reloadUsers()} /> : users === null ? <div className="p-5 space-y-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-4/5"/><Skeleton className="h-4 w-3/5"/></div> : attention.length === 0 ? <div className="p-8 text-center"><span className="inline-grid place-items-center h-9 w-9 rounded-full bg-mint/10 text-mint mb-3">✓</span><p className="text-sm font-medium">صف رسیدگی خالی است</p><p className="text-xs text-muted mt-1">مورد فوری برای پیگیری وجود ندارد.</p></div> : attention.slice(0, 8).map((u) => <Link key={u.id} to={`/users/${u.id}`} className="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-line last:border-0 hover:bg-white/[.025] transition-colors"><span className="text-sm truncate">{u.displayName}</span><span className={`text-xs shrink-0 ${u.tone === "danger" ? "text-danger" : "text-warn"}`}>{u.issue}</span></Link>)}
+          {userError && users === null ? <ErrorRegion resource="کاربران" onRetry={() => reloadUsers()} /> : users === null ? <div className="p-5 space-y-4"><Skeleton className="h-4 w-full"/><Skeleton className="h-4 w-4/5"/><Skeleton className="h-4 w-3/5"/></div> : attention.length === 0 ? <div className="p-8 text-center"><span className="inline-grid place-items-center h-9 w-9 rounded-full bg-mint/10 text-mint mb-3">✓</span><p className="text-sm font-medium">صف رسیدگی خالی است</p><p className="text-xs text-muted mt-1">مورد فوری برای پیگیری وجود ندارد.</p></div> : attention.map((u) => <Link key={u.id} to={`/users/${u.id}`} className="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-line last:border-0 hover:bg-white/[.025] transition-colors"><span className="text-sm truncate">{u.displayName}</span><span className={`text-xs shrink-0 ${u.tone === "danger" ? "text-danger" : "text-warn"}`}>{u.issue}</span></Link>)}
         </Card>
       </section>
     </div>
@@ -115,3 +126,15 @@ function NetworkPulse({ servers, users, failed }: { servers: any[] | null; users
 }
 
 function isExpiredUser(user: any) { return user.status === "EXPIRED" || (user.expireAt && new Date(user.expireAt).getTime() < Date.now()); }
+
+function userUsedBytes(user: any) {
+  const seen = new Set<string>();
+  return (user.links ?? []).reduce((sum: number, link: any) => {
+    const key = link.server?.panelType === "THREEXUI"
+      ? `THREEXUI:${String(link.server.baseUrl ?? "").replace(/\/$/, "").toLowerCase()}:${link.remoteId}`
+      : `${link.serverId}:${link.remoteId}`;
+    if (seen.has(key)) return sum;
+    seen.add(key);
+    return sum + (link.usedBytes ?? 0);
+  }, 0);
+}
