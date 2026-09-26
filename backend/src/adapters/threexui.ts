@@ -276,9 +276,13 @@ export class ThreeXUIAdapter implements PanelAdapter {
         const stat = stats.find((entry: any) => entry.email === user.remoteId || entry.id === client?.id);
         if (!client && !stat) continue;
         const previous = result[user.remoteId];
+        const inboundUsedBytes = Number(stat?.up ?? client?.up ?? 0) + Number(stat?.down ?? client?.down ?? 0);
+        // 3x-ui can expose the same client-wide counters in every inbound
+        // row when one client is attached to multiple inbounds. Do not add
+        // those repeated totals together; retain the highest observation.
         result[user.remoteId] = {
           remoteId: user.remoteId,
-          usedBytes: (previous?.usedBytes ?? 0) + Number(stat?.up ?? client?.up ?? 0) + Number(stat?.down ?? client?.down ?? 0),
+          usedBytes: Math.max(previous?.usedBytes ?? 0, inboundUsedBytes),
           dataLimitBytes: stat?.total ?? client?.totalGB ? Number(stat?.total ?? client?.totalGB) : null,
           expireAt: stat?.expiryTime ?? client?.expiryTime ? new Date(Number(stat?.expiryTime ?? client?.expiryTime)) : null,
           enabled: previous ? previous.enabled && (stat?.enable ?? client?.enable ?? true) : (stat?.enable ?? client?.enable ?? true),
