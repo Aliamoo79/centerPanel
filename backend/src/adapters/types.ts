@@ -44,6 +44,9 @@ export interface PanelAdapter {
   /** Verify the stored credentials can reach and authenticate to the panel */
   testConnection(): Promise<{ ok: boolean; message?: string }>;
 
+  /** List selectable inbound definitions when the panel supports it. */
+  listInbounds?(): Promise<{ id: number; remark?: string; protocol?: string; port?: number }[]>;
+
   /** Provision a new account on this panel for a platform user */
   createUser(params: CreateRemoteUserParams): Promise<{ remoteId: string; remoteExtra?: Record<string, unknown> }>;
 

@@ -132,6 +132,15 @@ export class ThreeXUIAdapter implements PanelAdapter {
     }
   }
 
+  async listInbounds(): Promise<{ id: number; remark?: string; protocol?: string; port?: number }[]> {
+    const c = await this.authedClient();
+    const response = await c.get("/panel/api/inbounds/list");
+    const items = Array.isArray(response.data?.obj) ? response.data.obj : [];
+    return items
+      .map((item: any) => ({ id: Number(item.id), remark: item.remark || undefined, protocol: item.protocol || undefined, port: Number(item.port) || undefined }))
+      .filter((item: { id: number }) => Number.isInteger(item.id) && item.id > 0);
+  }
+
   async createUser(params: CreateRemoteUserParams): Promise<{ remoteId: string; remoteExtra?: Record<string, unknown> }> {
     const inbounds = await Promise.all(this.inboundIds.map((id) => this.getInbound(id, true)));
     const inbound = inbounds[0];

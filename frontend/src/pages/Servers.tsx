@@ -226,6 +226,12 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
       ? initial.extra.inboundIds.join(", ")
       : initial?.extra?.inboundId !== undefined ? String(initial.extra.inboundId) : ""
   );
+  const [inboundOptions, setInboundOptions] = useState<{ id: number; remark?: string; protocol?: string; port?: number }[]>([]);
+  const [selectedInboundIds, setSelectedInboundIds] = useState<number[]>(() => {
+    const raw = Array.isArray(initial?.extra?.inboundIds) ? initial.extra.inboundIds : [initial?.extra?.inboundId];
+    return [...new Set(raw.map((id: any) => Number(id)).filter((id: number) => Number.isInteger(id) && id > 0))];
+  });
+  const [loadingInbounds, setLoadingInbounds] = useState(false);
   const [useToken, setUseToken] = useState(initial?.extra?.authMethod === "token");
   const [x4gProtocol, setX4gProtocol] = useState(initial?.extra?.protocol ?? "vless-ws");
   const [x4gPort, setX4gPort] = useState(initial?.extra?.port ? String(initial.extra.port) : "");
@@ -234,6 +240,29 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadInbounds() {
+    setLoadingInbounds(true);
+    setError(null);
+    try {
+      const extra: Record<string, any> = {};
+      if (useToken) extra.authMethod = "token";
+      const options = await api.listServerInbounds({
+        ...(initial ? { serverId: initial.id } : {}),
+        panelType: "THREEXUI",
+        baseUrl,
+        username,
+        ...(password ? { password } : {}),
+        extra,
+      });
+      setInboundOptions(options);
+      setSelectedInboundIds((current) => current.filter((id) => options.some((item) => item.id === id)));
+    } catch (err: any) {
+      setError(err.message ?? "دریافت inboundها ناموفق بود");
+    } finally {
+      setLoadingInbounds(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -241,7 +270,10 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
     try {
       const extra: Record<string, any> = {};
       if (panelType === "THREEXUI") {
-        const inboundIds = [...new Set(extraInboundIds.split(/[\s,;]+/).map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
+        const inboundIds = selectedInboundIds.length > 0
+          ? selectedInboundIds
+          : [...new Set(extraInboundIds.split(/[\s,;]+/).map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
+        if (inboundIds.length === 0) throw new Error("حداقل یک inbound را انتخاب کنید");
         if (inboundIds.length > 0) extra.inboundIds = inboundIds;
         if (useToken) extra.authMethod = "token";
       }
@@ -363,9 +395,34 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
         )}
         {panelType === "THREEXUI" && (
           <div className="sm:col-span-2">
-            <label className="block text-xs text-muted mb-1.5">شناسه Inbound برای ساخت کاربر جدید</label>
-            <Input value={extraInboundIds} onChange={(e) => setExtraInboundIds(e.target.value)} placeholder="مثلاً 1, 2, 3" dir="ltr" />
-            <p className="text-[11px] text-muted mt-1">چند شناسه را با کاما، فاصله یا خط جدید جدا کنید؛ کاربر در همه‌ی inboundهای انتخاب‌شده ساخته می‌شود.</p>
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <label className="block text-xs text-muted">Inboundهای این سرور</label>
+              <Button type="button" variant="ghost" onClick={loadInbounds} disabled={loadingInbounds || !baseUrl}>
+                {loadingInbounds ? "در حال دریافت..." : "دریافت inboundها"}
+              </Button>
+            </div>
+            {inboundOptions.length > 0 ? (
+              <div className="grid gap-2 max-h-52 overflow-y-auto rounded-md border border-line bg-panel2 p-2">
+                {inboundOptions.map((inbound) => {
+                  const checked = selectedInboundIds.includes(inbound.id);
+                  return (
+                    <label key={inbound.id} className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${checked ? "bg-primary/10" : "hover:bg-white/[.03]"}`}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => setSelectedInboundIds((current) => checked ? current.filter((id) => id !== inbound.id) : [...current, inbound.id])}
+                      />
+                      <span className="font-nums text-muted">#{inbound.id}</span>
+                      <span className="min-w-0 flex-1 truncate">{inbound.remark || "بدون نام"}</span>
+                      <span className="text-xs text-muted font-nums">{inbound.protocol || "—"}{inbound.port ? ` : ${inbound.port}` : ""}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="rounded-md border border-line bg-panel2 px-3 py-3 text-xs text-muted">برای نمایش inboundها روی «دریافت inboundها» بزنید.</p>
+            )}
+            <p className="text-[11px] text-muted mt-1">کاربر در همه‌ی inboundهای انتخاب‌شده ساخته می‌شود و همه‌ی کانفیگ‌ها در subscription قرار می‌گیرند.</p>
           </div>
         )}
         {panelType === "X4G" && (
