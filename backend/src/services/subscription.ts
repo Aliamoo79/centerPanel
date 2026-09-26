@@ -48,6 +48,18 @@ function alternateHosts(server: { alternateConfigHosts?: string | null }): strin
   }
 }
 
+function inboundRemarkPrefixes(server: { extra?: string | null }): Record<string, string> {
+  if (!server.extra) return {};
+  try {
+    const extra = JSON.parse(server.extra);
+    const prefixes = extra?.inboundRemarkPrefixes;
+    if (!prefixes || typeof prefixes !== "object" || Array.isArray(prefixes)) return {};
+    return Object.fromEntries(Object.entries(prefixes).filter(([key, value]) => /^\d+$/.test(key) && typeof value === "string" && value.trim()).map(([key, value]) => [key, String(value).trim()]));
+  } catch {
+    return {};
+  }
+}
+
 function withHost(uri: string, host: string): string | null {
   try {
     const parsed = new URL(uri);
@@ -113,21 +125,26 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
         const adapter = getAdapter(link.server.panelType as any, link.server);
         const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
         const configs = await withTimeout(adapter.getConfigs(link.remoteId, remoteExtra), CONFIG_FETCH_TIMEOUT_MS);
-        const prefix = (link.server as any).remarkPrefix as string | null;
+        const defaultPrefix = (link.server as any).remarkPrefix as string | null;
+        const prefixes = inboundRemarkPrefixes(link.server as any);
         const hosts = alternateHosts(link.server as any);
         const expandedUris = configs
           .filter((cfg) => SUPPORTED_CONFIG_URI.test(cfg.uri))
-          .flatMap((cfg) => [
-            cfg.uri,
-            ...hosts.map((host) => withHost(cfg.uri, host)).filter((uri): uri is string => Boolean(uri)),
-          ]);
-        return expandedUris.map((uri, i) => {
+          .flatMap((cfg) => {
+            const prefix = cfg.inboundId !== undefined ? prefixes[String(cfg.inboundId)] ?? defaultPrefix : defaultPrefix;
+            return [cfg.uri, ...hosts.map((host) => withHost(cfg.uri, host)).filter((uri): uri is string => Boolean(uri))]
+              .map((uri) => ({ uri, prefix }));
+          });
+        const prefixCounters = new Map<string, number>();
+        return expandedUris.map(({ uri, prefix }) => {
           if (prefix) {
+            const prefixIndex = prefixCounters.get(prefix) ?? 0;
+            prefixCounters.set(prefix, prefixIndex + 1);
             // Base remark is "{prefix}-{username}"; if a server hands back
             // more than one config (e.g. multiple clean IPs), a numeric
             // suffix keeps them distinguishable in the client's config list
             // instead of colliding on the exact same name.
-            const remark = i === 0 ? `${prefix}-${user.displayName}` : `${prefix}-${user.displayName}-${i + 1}`;
+            const remark = prefixIndex === 0 ? `${prefix}-${user.displayName}` : `${prefix}-${user.displayName}-${prefixIndex + 1}`;
             return withRemark(uri, remark);
           }
           return uri;

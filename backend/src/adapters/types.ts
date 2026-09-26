@@ -38,6 +38,8 @@ export interface RemoteConfig {
   uri: string;
   /** Human label, e.g. server name + inbound remark */
   label: string;
+  /** The panel inbound that produced this config, when known. */
+  inboundId?: number;
 }
 
 export interface PanelAdapter {
