@@ -23,6 +23,8 @@ export default function Servers() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { ok: boolean; message?: string }>>({});
+  const [addingToAll, setAddingToAll] = useState<string | null>(null);
+  const [removingFromAll, setRemovingFromAll] = useState<string | null>(null);
 
   function reload() {
     api.listServers().then(setServers).catch((err) => toast.error(err.message ?? "خطا در دریافت سرورها"));
@@ -44,6 +46,56 @@ export default function Servers() {
       toast.success("سرور حذف شد");
     } catch (err: any) {
       toast.error(err.message ?? "حذف سرور ناموفق بود");
+    }
+  }
+
+  async function handleToggle(s: any) {
+    const enabled = s.status !== "ACTIVE";
+    const action = enabled ? "فعال" : "غیرفعال";
+    if (!confirm(`این سرور برای همه کاربران ${action} شود؟`)) return;
+    try {
+      await api.setServerEnabled(s.id, enabled);
+      reload();
+      toast.success(`سرور برای همه کاربران ${action} شد`);
+    } catch (err: any) {
+      toast.error(err.message ?? `تغییر وضعیت سرور ناموفق بود`);
+      reload();
+    }
+  }
+
+  async function handleAddToAllUsers(s: any) {
+    if (!confirm(`این سرور برای همه کاربران فعال اضافه شود؟ کاربران قبلی دوباره ساخته نمی‌شوند.`)) return;
+    setAddingToAll(s.id);
+    try {
+      const result = await api.addServerToAllUsers(s.id);
+      reload();
+      if (result.failed.length > 0) {
+        toast.error(`${result.added.length} کاربر اضافه شد؛ ${result.failed.length} کاربر ناموفق بود.`);
+      } else {
+        toast.success(`${result.added.length} کاربر اضافه شد؛ ${result.skipped.length} کاربر قبلاً روی این سرور بودند.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "افزودن سرور برای همه کاربران ناموفق بود");
+    } finally {
+      setAddingToAll(null);
+    }
+  }
+
+  async function handleRemoveFromAllUsers(s: any) {
+    if (!confirm(`این سرور از همه کاربران حذف شود؟ خود سرور حذف نمی‌شود.`)) return;
+    setRemovingFromAll(s.id);
+    try {
+      const result = await api.removeServerFromAllUsers(s.id);
+      reload();
+      if (result.failed.length > 0) {
+        toast.error(`${result.removed.length} کاربر حذف شد؛ ${result.failed.length} کاربر ناموفق بود.`);
+      } else {
+        toast.success(`سرور از ${result.removed.length} کاربر حذف شد.`);
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "حذف سرور از کاربران ناموفق بود");
+    } finally {
+      setRemovingFromAll(null);
     }
   }
 
@@ -96,29 +148,49 @@ export default function Servers() {
         )}
         {servers?.map((s) => (
           <Card key={s.id} className="p-4 sm:p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div className="flex items-center gap-3 min-w-0">
                 <StatusDot ok={testResults[s.id]?.ok ?? s.status === "ACTIVE"} pulse />
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{s.name}</p>
-                  <p className="text-xs text-muted font-nums mt-0.5 truncate">
+                  <p className="text-xs text-muted font-nums mt-0.5 truncate whitespace-nowrap">
                     {panelLabel(s.panelType)} · {s.baseUrl} · {s._count?.links ?? 0} کاربر
                     {s.remarkPrefix && <> · remark: {s.remarkPrefix}-name</>}
                     {s.alternateConfigHosts?.length > 0 && <> · alternate: {s.alternateConfigHosts.join(", ")}</>}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:justify-end">
                 {testResults[s.id] && (
                   <span className={`text-xs font-nums ${testResults[s.id].ok ? "text-mint" : "text-danger"}`}>
                     {testResults[s.id].ok ? "متصل" : testResults[s.id].message}
                   </span>
                 )}
-                <Button variant="ghost" onClick={() => handleTest(s.id)}>
+                <Button variant="ghost" className="whitespace-nowrap" onClick={() => handleTest(s.id)}>
                   تست اتصال
+                </Button>
+                <Button variant="ghost" className="whitespace-nowrap" onClick={() => handleToggle(s)}>
+                  {s.status === "ACTIVE" ? "غیرفعال کردن برای همه" : "فعال کردن برای همه"}
                 </Button>
                 <Button
                   variant="ghost"
+                  className="whitespace-nowrap"
+                  disabled={addingToAll === s.id || s.status !== "ACTIVE"}
+                  onClick={() => handleAddToAllUsers(s)}
+                >
+                  {addingToAll === s.id ? "در حال افزودن..." : "افزودن به همه کاربران"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="whitespace-nowrap"
+                  disabled={removingFromAll === s.id || !s._count?.links}
+                  onClick={() => handleRemoveFromAllUsers(s)}
+                >
+                  {removingFromAll === s.id ? "در حال حذف..." : "حذف از همه کاربران"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="whitespace-nowrap"
                   onClick={() => {
                     setEditing(s);
                     setShowForm(true);
@@ -126,7 +198,7 @@ export default function Servers() {
                 >
                   ویرایش
                 </Button>
-                <Button variant="danger" onClick={() => handleDelete(s.id)}>
+                <Button variant="danger" className="whitespace-nowrap" onClick={() => handleDelete(s.id)}>
                   حذف
                 </Button>
               </div>

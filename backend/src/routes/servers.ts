@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
-import { requireAdmin, requireRole, AuthedRequest } from "../middleware/auth";
+import { requireAdmin, AuthedRequest } from "../middleware/auth";
 import { getAdapter } from "../adapters";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
+import { describePanelError } from "../lib/errors";
 
 export const serversRouter = Router();
 serversRouter.use(requireAdmin);
@@ -80,7 +81,6 @@ serversRouter.get(
 
 serversRouter.post(
   "/",
-  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = serverSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -114,7 +114,6 @@ serversRouter.post(
 // on that server with zero other changes needed.
 serversRouter.patch(
   "/:id",
-  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const existing = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
@@ -141,9 +140,163 @@ serversRouter.patch(
   })
 );
 
+// Temporarily disable or restore every user configuration attached to this
+// server. The per-user link preference is kept intact so re-enabling the
+// server does not restore users who were individually disabled.
+serversRouter.patch(
+  "/:id/status",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const parsed = z.object({ enabled: z.boolean() }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const server = await prisma.server.findUnique({
+      where: { id: req.params.id },
+      include: { links: true },
+    });
+    if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+
+    const enable = parsed.data.enabled;
+    const targetStatus = enable ? "ACTIVE" : "DISABLED";
+    const links = server.links.filter((link) => link.enabled);
+
+    // Block new polling/config requests immediately while remote state is
+    // being fanned out to every linked account.
+    if (!enable) {
+      await prisma.server.update({ where: { id: server.id }, data: { status: targetStatus } });
+    }
+
+    const results = await Promise.allSettled(links.map(async (link) => {
+      const adapter = getAdapter(server.panelType as any, server);
+      const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+      await adapter.setEnabled(link.remoteId, enable, remoteExtra);
+    }));
+    const failures = results
+      .map((result, index) => result.status === "rejected"
+        ? { userLinkId: links[index].id, error: describePanelError(result.reason) }
+        : null)
+      .filter(Boolean);
+
+    if (enable && failures.length > 0) {
+      return res.status(502).json({
+        error: "برخی کاربران روی پنل فعال نشدند؛ سرور همچنان غیرفعال است",
+        failures,
+      });
+    }
+
+    const updated = await prisma.server.update({
+      where: { id: server.id },
+      data: { status: targetStatus },
+    });
+    logger.info(
+      enable ? "server_enabled" : "server_disabled",
+      `سرور «${server.name}» برای ${links.length} کاربر ${enable ? "فعال" : "غیرفعال"} شد`,
+      { serverId: server.id, failedCount: failures.length, admin: req.admin?.username },
+    );
+    res.json({ ...toPublic(updated), failures });
+  })
+);
+
+// Provision this server for every user that is not already linked to it.
+serversRouter.post(
+  "/:id/users",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const server = await prisma.server.findUnique({ where: { id: req.params.id } });
+    if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+    if (server.status !== "ACTIVE") return res.status(400).json({ error: "ابتدا سرور را فعال کنید" });
+
+    const [users, existingLinks] = await Promise.all([
+      prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.userServerLink.findMany({ where: { serverId: server.id }, select: { userId: true } }),
+    ]);
+    const linkedUserIds = new Set(existingLinks.map((link) => link.userId));
+    const adapter = getAdapter(server.panelType as any, server);
+    const added: string[] = [];
+    const skipped: string[] = [];
+    const failed: { user: string; error: string }[] = [];
+
+    for (const user of users) {
+      if (linkedUserIds.has(user.id)) {
+        skipped.push(user.username);
+        continue;
+      }
+      try {
+        const { remoteId, remoteExtra } = await adapter.createUser({
+          username: user.username,
+          dataLimitBytes: user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null,
+          expireAt: user.expireAt,
+          ipLimit: user.ipLimit ?? null,
+        });
+        await prisma.userServerLink.create({
+          data: {
+            userId: user.id,
+            serverId: server.id,
+            remoteId,
+            remoteExtra: remoteExtra ? JSON.stringify(remoteExtra) : null,
+          },
+        });
+        added.push(user.username);
+      } catch (err: any) {
+        failed.push({ user: user.username, error: describePanelError(err) });
+      }
+    }
+
+    logger.info("server_added_to_all_users", `سرور «${server.name}» برای کاربران provision شد`, {
+      serverId: server.id,
+      addedCount: added.length,
+      skippedCount: skipped.length,
+      failedCount: failed.length,
+      admin: req.admin?.username,
+    });
+    res.json({ added, skipped, failed });
+  })
+);
+
+// Remove this server from every user without deleting the server definition.
+serversRouter.delete(
+  "/:id/users",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const server = await prisma.server.findUnique({ where: { id: req.params.id } });
+    if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+
+    const links = await prisma.userServerLink.findMany({
+      where: { serverId: server.id },
+      include: { user: { include: { links: { include: { server: true } } } } },
+    });
+    const adapter = getAdapter(server.panelType as any, server);
+    const removed: string[] = [];
+    const failed: { user: string; error: string }[] = [];
+
+    for (const link of links) {
+      try {
+        const remoteAccountStillUsed = link.user.links.some((other) => {
+          if (other.id === link.id) return false;
+          if (other.server.panelType !== server.panelType) return false;
+          if (other.server.baseUrl.replace(/\/$/, "").toLowerCase() !== server.baseUrl.replace(/\/$/, "").toLowerCase()) return false;
+          return other.remoteId === link.remoteId;
+        });
+        if (!remoteAccountStillUsed) {
+          const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+          await adapter.deleteUser(link.remoteId, remoteExtra);
+        }
+        await prisma.userServerLink.delete({ where: { id: link.id } });
+        removed.push(link.user.username);
+      } catch (err: any) {
+        failed.push({ user: link.user.username, error: describePanelError(err) });
+      }
+    }
+
+    logger.info("server_removed_from_all_users", `سرور «${server.name}» از کاربران حذف شد`, {
+      serverId: server.id,
+      removedCount: removed.length,
+      failedCount: failed.length,
+      admin: req.admin?.username,
+    });
+    res.json({ removed, failed });
+  })
+);
+
 serversRouter.delete(
   "/:id",
-  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const existing = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
@@ -156,7 +309,6 @@ serversRouter.delete(
 
 serversRouter.post(
   "/:id/test",
-  requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const server = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });

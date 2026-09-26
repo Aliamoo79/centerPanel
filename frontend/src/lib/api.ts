@@ -1,5 +1,4 @@
 const TOKEN_KEY = "vpn_admin_token";
-const ROLE_KEY = "vpn_admin_role";
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -7,16 +6,8 @@ export function getToken(): string | null {
 export function setToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
 }
-export function setSession(token: string, role: "ADMIN" | "SELLER") {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(ROLE_KEY, role);
-}
-export function getRole(): "ADMIN" | "SELLER" {
-  return localStorage.getItem(ROLE_KEY) === "SELLER" ? "SELLER" : "ADMIN";
-}
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
 }
 
 function extractErrorMessage(body: any, status: number): string {
@@ -67,7 +58,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   login: (username: string, password: string) =>
-    request<{ token: string; admin: { id: string; username: string; role: "ADMIN" | "SELLER" } }>("/auth/login", {
+    request<{ token: string; admin: { id: string; username: string } }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
     }),
@@ -75,6 +66,12 @@ export const api = {
   listServers: () => request<any[]>("/servers"),
   createServer: (data: any) => request<any>("/servers", { method: "POST", body: JSON.stringify(data) }),
   updateServer: (id: string, data: any) => request<any>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+  setServerEnabled: (id: string, enabled: boolean) =>
+    request<any>(`/servers/${id}/status`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
+  addServerToAllUsers: (id: string) =>
+    request<{ added: string[]; skipped: string[]; failed: { user: string; error: string }[] }>(`/servers/${id}/users`, { method: "POST" }),
+  removeServerFromAllUsers: (id: string) =>
+    request<{ removed: string[]; failed: { user: string; error: string }[] }>(`/servers/${id}/users`, { method: "DELETE" }),
   deleteServer: (id: string) => request<void>(`/servers/${id}`, { method: "DELETE" }),
   testServer: (id: string) => request<{ ok: boolean; message?: string }>(`/servers/${id}/test`, { method: "POST" }),
 
@@ -98,12 +95,6 @@ export const api = {
       method: "POST",
       body: JSON.stringify(backup),
     }),
-
-  getCredits: () => request<any>("/credits"),
-  addCredits: (data: { amount: number; description?: string }) =>
-    request<{ balance: number }>("/credits/deposit", { method: "POST", body: JSON.stringify(data) }),
-  updateCreditPricing: (data: any) =>
-    request<any>("/credits/pricing", { method: "PATCH", body: JSON.stringify(data) }),
 
   listLogs: (params?: { level?: string; limit?: number }) => {
     const qs = new URLSearchParams();
