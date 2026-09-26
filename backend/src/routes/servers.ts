@@ -40,6 +40,16 @@ function cleanExtra(extra?: Record<string, any>): string | null {
   return JSON.stringify(extra);
 }
 
+function inboundIdsFromExtra(extra: string | Record<string, any> | null | undefined): number[] {
+  let parsed: any = extra;
+  if (typeof extra === "string") {
+    try { parsed = JSON.parse(extra); } catch { parsed = null; }
+  }
+  const raw = Array.isArray(parsed?.inboundIds) ? parsed.inboundIds : [parsed?.inboundId];
+  const values = raw.map((id: any) => Number(id)).filter((id: number) => Number.isInteger(id) && id > 0) as number[];
+  return [...new Set<number>(values)];
+}
+
 function cleanAlternateConfigHosts(value?: string): string | null {
   if (value === undefined) return null;
   const hosts = [...new Set(value.split(/[\s,;]+/).map((host) => host.trim().toLowerCase()).filter(Boolean))];
@@ -168,6 +178,10 @@ serversRouter.patch(
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     const { extra, ...rest } = parsed.data;
+    const inboundSelectionChanged = (rest.panelType === "THREEXUI" || (rest.panelType === undefined && existing.panelType === "THREEXUI"))
+      && (extra?.inboundIds !== undefined || extra?.inboundId !== undefined);
+    const nextInboundIds = inboundSelectionChanged ? inboundIdsFromExtra(extra) : [];
+    const inboundIdsChanged = inboundSelectionChanged && JSON.stringify(inboundIdsFromExtra(existing.extra)) !== JSON.stringify(nextInboundIds);
     const server = await prisma.server.update({
       where: { id: req.params.id },
       data: {
@@ -182,7 +196,24 @@ serversRouter.patch(
       },
     });
     logger.info("server_updated", `سرور «${server.name}» ویرایش شد`, { serverId: server.id, admin: req.admin?.username });
-    res.json(toPublic(server));
+    const inboundSyncFailures: { userLinkId: string; error: string }[] = [];
+    if (inboundIdsChanged && nextInboundIds.length > 0) {
+      const links = await prisma.userServerLink.findMany({ where: { serverId: server.id } });
+      const adapter = getAdapter("THREEXUI", server);
+      for (const link of links) {
+        try {
+          const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+          if (adapter.syncUserInbounds) await adapter.syncUserInbounds(link.remoteId, nextInboundIds, remoteExtra);
+          await prisma.userServerLink.update({
+            where: { id: link.id },
+            data: { remoteExtra: JSON.stringify({ ...(remoteExtra ?? {}), inboundIds: nextInboundIds, inboundId: nextInboundIds[0] }) },
+          });
+        } catch (err: any) {
+          inboundSyncFailures.push({ userLinkId: link.id, error: describePanelError(err) });
+        }
+      }
+    }
+    res.json({ ...toPublic(server), inboundSyncFailures });
   })
 );
 

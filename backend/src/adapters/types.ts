@@ -50,6 +50,9 @@ export interface PanelAdapter {
   /** Provision a new account on this panel for a platform user */
   createUser(params: CreateRemoteUserParams): Promise<{ remoteId: string; remoteExtra?: Record<string, unknown> }>;
 
+  /** Update panel-side placement when a server's selected inbounds change. */
+  syncUserInbounds?(remoteId: string, inboundIds: number[], remoteExtra?: Record<string, unknown> | null): Promise<void>;
+
   /** Fetch current usage / limit / expiry / enabled state for an existing account */
   getUserState(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteUserState>;
 
