@@ -42,14 +42,15 @@ import {
 export class ThreeXUIAdapter implements PanelAdapter {
   private client: AxiosInstance;
   private cookie: string | null = null;
-  private inboundId: number;
+  private inboundIds: number[];
   private useToken: boolean;
-  private inboundCache: any | null = null;
+  private inboundCache = new Map<number, any>();
 
   constructor(private creds: ServerCredentials) {
     this.client = axios.create({ baseURL: creds.baseUrl, timeout: 15000, withCredentials: true });
-    const raw = creds.extra?.inboundId;
-    this.inboundId = Number(Array.isArray(raw) ? raw[0] : raw) || 1;
+    const configured = Array.isArray(creds.extra?.inboundIds) ? creds.extra?.inboundIds : [creds.extra?.inboundId];
+    this.inboundIds = [...new Set(configured.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+    if (this.inboundIds.length === 0) this.inboundIds = [1];
     this.useToken = creds.extra?.authMethod === "token";
     if (this.useToken && creds.password) {
       this.client.defaults.headers.common["Authorization"] = `Bearer ${creds.password}`;
@@ -80,7 +81,7 @@ export class ThreeXUIAdapter implements PanelAdapter {
 
   /** Fetches the target inbound (protocol, port, streamSettings, and its live client list). Cached per adapter instance. */
   private async getInbound(inboundId: number, fresh = false): Promise<any> {
-    if (this.inboundCache && this.inboundCache.id === inboundId && !fresh) return this.inboundCache;
+    if (this.inboundCache.has(inboundId) && !fresh) return this.inboundCache.get(inboundId);
     const c = await this.authedClient();
     let payload: any;
     try {
@@ -103,7 +104,7 @@ export class ThreeXUIAdapter implements PanelAdapter {
     const streamSettings =
       typeof obj.streamSettings === "string" ? JSON.parse(obj.streamSettings || "{}") : (obj.streamSettings ?? {});
     const inbound = { ...obj, clients: settings.clients ?? [], streamSettings };
-    this.inboundCache = inbound;
+    this.inboundCache.set(inboundId, inbound);
     return inbound;
   }
 
@@ -132,7 +133,8 @@ export class ThreeXUIAdapter implements PanelAdapter {
   }
 
   async createUser(params: CreateRemoteUserParams): Promise<{ remoteId: string; remoteExtra?: Record<string, unknown> }> {
-    const inbound = await this.getInbound(this.inboundId, true);
+    const inbounds = await Promise.all(this.inboundIds.map((id) => this.getInbound(id, true)));
+    const inbound = inbounds[0];
     const protocol = inbound.protocol as string;
     const network = inbound.streamSettings?.network ?? "tcp";
     const security = inbound.streamSettings?.security ?? "none";
@@ -167,27 +169,27 @@ export class ThreeXUIAdapter implements PanelAdapter {
 
     if (existing) {
       const attach = await c.post(`/panel/api/clients/${encodeURIComponent(params.username)}/attach`, {
-        inboundIds: [this.inboundId],
+        inboundIds: this.inboundIds,
       });
       if (!attach.data || attach.data.success === false) {
         throw new Error(attach.data?.msg ?? "اتصال کاربر موجود به اینباند 3x-ui ناموفق بود");
       }
-      this.inboundCache = null;
+      this.inboundIds.forEach((id) => this.inboundCache.delete(id));
       const clientId = existing.uuid || existing.password || existing.auth;
       return {
         remoteId: params.username,
-        remoteExtra: { clientId, inboundId: this.inboundId, protocol, subId: existing.subId },
+        remoteExtra: { clientId, inboundIds: this.inboundIds, inboundId: this.inboundIds[0], protocol, subId: existing.subId },
       };
     }
 
     const res = await c.post("/panel/api/clients/add", {
       client,
-      inboundIds: [this.inboundId],
+      inboundIds: this.inboundIds,
     });
     if (!res.data || res.data.success === false) {
       throw new Error(res.data?.msg ?? "افزودن کاربر در 3x-ui ناموفق بود");
     }
-    this.inboundCache = null; // invalidate — the inbound's client list just changed
+    this.inboundIds.forEach((id) => this.inboundCache.delete(id)); // invalidate — the inbound's client list just changed
 
     // The create ack doesn't echo the client, so read the record back to
     // learn the server-generated secret and subscription id.
@@ -196,7 +198,7 @@ export class ThreeXUIAdapter implements PanelAdapter {
 
     return {
       remoteId: params.username,
-      remoteExtra: { clientId, inboundId: this.inboundId, protocol, subId: rec.subId },
+      remoteExtra: { clientId, inboundIds: this.inboundIds, inboundId: this.inboundIds[0], protocol, subId: rec.subId },
     };
   }
 
@@ -239,34 +241,27 @@ export class ThreeXUIAdapter implements PanelAdapter {
     const inbounds = Array.isArray(response.data?.obj) ? response.data.obj : [];
 
     for (const user of users) {
-      const inboundId = Number(user.remoteExtra?.inboundId) || this.inboundId;
-      const raw = inbounds.find((item: any) => Number(item.id) === inboundId);
-      if (!raw) continue;
-      const settings = typeof raw.settings === "string" ? JSON.parse(raw.settings || "{}") : (raw.settings ?? {});
-      const inbound = { ...raw, clients: settings.clients ?? [] };
-      const clients = Array.isArray(inbound.clients) ? inbound.clients : [];
-      const stats = Array.isArray(inbound.clientStats) ? inbound.clientStats : [];
-
-      const usersForInbound = users.filter((item) => {
-        const id = Number(item.remoteExtra?.inboundId) || this.inboundId;
-        return id === inboundId;
-      });
-      for (const item of usersForInbound) {
-        if (result[item.remoteId]) continue;
-        const client = clients.find((entry: any) => entry.email === item.remoteId);
-        const stat = stats.find((entry: any) => entry.email === item.remoteId || entry.id === client?.id);
+      const configuredIds = Array.isArray(user.remoteExtra?.inboundIds)
+        ? user.remoteExtra?.inboundIds
+        : [user.remoteExtra?.inboundId];
+      const inboundIds = [...new Set(configuredIds.map((id) => Number(id)).filter((id) => id > 0))];
+      if (inboundIds.length === 0) inboundIds.push(...this.inboundIds);
+      for (const inboundId of inboundIds) {
+        const raw = inbounds.find((item: any) => Number(item.id) === inboundId);
+        if (!raw) continue;
+        const settings = typeof raw.settings === "string" ? JSON.parse(raw.settings || "{}") : (raw.settings ?? {});
+        const clients = Array.isArray(settings.clients) ? settings.clients : [];
+        const stats = Array.isArray(raw.clientStats) ? raw.clientStats : [];
+        const client = clients.find((entry: any) => entry.email === user.remoteId);
+        const stat = stats.find((entry: any) => entry.email === user.remoteId || entry.id === client?.id);
         if (!client && !stat) continue;
-
-        const up = Number(stat?.up ?? client?.up ?? 0);
-        const down = Number(stat?.down ?? client?.down ?? 0);
-        const total = stat?.total ?? client?.totalGB ?? 0;
-        const expiryTime = stat?.expiryTime ?? client?.expiryTime ?? 0;
-        result[item.remoteId] = {
-          remoteId: item.remoteId,
-          usedBytes: up + down,
-          dataLimitBytes: total ? Number(total) : null,
-          expireAt: expiryTime ? new Date(Number(expiryTime)) : null,
-          enabled: stat?.enable ?? client?.enable ?? true,
+        const previous = result[user.remoteId];
+        result[user.remoteId] = {
+          remoteId: user.remoteId,
+          usedBytes: (previous?.usedBytes ?? 0) + Number(stat?.up ?? client?.up ?? 0) + Number(stat?.down ?? client?.down ?? 0),
+          dataLimitBytes: stat?.total ?? client?.totalGB ? Number(stat?.total ?? client?.totalGB) : null,
+          expireAt: stat?.expiryTime ?? client?.expiryTime ? new Date(Number(stat?.expiryTime ?? client?.expiryTime)) : null,
+          enabled: previous ? previous.enabled && (stat?.enable ?? client?.enable ?? true) : (stat?.enable ?? client?.enable ?? true),
           ipLimit: client?.limitIp ? Number(client.limitIp) : null,
         };
       }
@@ -317,7 +312,7 @@ export class ThreeXUIAdapter implements PanelAdapter {
     if (!res.data || res.data.success === false) {
       throw new Error(res.data?.msg ?? "به‌روزرسانی کاربر در 3x-ui ناموفق بود");
     }
-    this.inboundCache = null;
+    this.inboundCache.clear();
   }
 
   async updateUser(
@@ -349,22 +344,23 @@ export class ThreeXUIAdapter implements PanelAdapter {
       if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
     }
 
-    const inboundId = Number(remoteExtra?.inboundId) || this.inboundId;
-    const res = await c.post(
-      `/panel/api/inbounds/${inboundId}/resetClientTraffic/${encodeURIComponent(remoteId)}`
-    );
-    if (!res.data || res.data.success === false) {
-      throw new Error(res.data?.msg ?? "Resetting 3x-ui traffic failed");
-    }
+    const configuredIds = Array.isArray(remoteExtra?.inboundIds) ? remoteExtra?.inboundIds : [remoteExtra?.inboundId];
+    const inboundIds = [...new Set(configuredIds.map((id) => Number(id)).filter((id) => id > 0))];
+    if (inboundIds.length === 0) inboundIds.push(...this.inboundIds);
+    await Promise.all(inboundIds.map(async (inboundId) => {
+      const res = await c.post(`/panel/api/inbounds/${inboundId}/resetClientTraffic/${encodeURIComponent(remoteId)}`);
+      if (!res.data || res.data.success === false) throw new Error(res.data?.msg ?? "Resetting 3x-ui traffic failed");
+    }));
   }
 
   async deleteUser(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<void> {
     const c = await this.authedClient();
-    const inboundId = Number(remoteExtra?.inboundId);
-    if (inboundId) {
+    const configuredIds = Array.isArray(remoteExtra?.inboundIds) ? remoteExtra?.inboundIds : [remoteExtra?.inboundId];
+    const inboundIds = [...new Set(configuredIds.map((id) => Number(id)).filter((id) => id > 0))];
+    if (inboundIds.length > 0) {
       try {
         const detach = await c.post(`/panel/api/clients/${encodeURIComponent(remoteId)}/detach`, {
-          inboundIds: [inboundId],
+          inboundIds,
         });
         if (!detach.data || detach.data.success === false) {
           throw new Error(detach.data?.msg ?? "جداسازی کاربر از اینباند 3x-ui ناموفق بود");
@@ -373,11 +369,11 @@ export class ThreeXUIAdapter implements PanelAdapter {
         // Remove the panel-wide row only when this was its final inbound.
         // Otherwise another local server link still depends on the client.
         const remaining = await c.get(`/panel/api/clients/get/${encodeURIComponent(remoteId)}`);
-        const inboundIds = remaining.data?.obj?.inboundIds;
-        if (remaining.data?.success && Array.isArray(inboundIds) && inboundIds.length === 0) {
+        const remainingInboundIds = remaining.data?.obj?.inboundIds;
+        if (remaining.data?.success && Array.isArray(remainingInboundIds) && remainingInboundIds.length === 0) {
           await c.post(`/panel/api/clients/del/${encodeURIComponent(remoteId)}?keepTraffic=0`);
         }
-        this.inboundCache = null;
+        this.inboundCache.clear();
         return;
       } catch (err: any) {
         // Older clients APIs do not support detach; retain their historical
@@ -386,13 +382,15 @@ export class ThreeXUIAdapter implements PanelAdapter {
       }
     }
     await c.post(`/panel/api/clients/del/${encodeURIComponent(remoteId)}?keepTraffic=0`);
-    this.inboundCache = null;
+    this.inboundCache.clear();
   }
 
   async getConfigs(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteConfig[]> {
-    const inboundId = (remoteExtra?.inboundId as number) ?? this.inboundId;
+    const configuredIds = Array.isArray(remoteExtra?.inboundIds) ? remoteExtra?.inboundIds : [remoteExtra?.inboundId];
+    const inboundIds = [...new Set(configuredIds.map((id) => Number(id)).filter((id) => id > 0))];
+    if (inboundIds.length === 0) inboundIds.push(...this.inboundIds);
     const clientId = remoteExtra?.clientId as string | undefined;
-    const inbound = await this.getInbound(inboundId, true);
+    const inbounds = await Promise.all(inboundIds.map((id) => this.getInbound(id, true)));
 
     // The links endpoint returns every generated link for this client across
     // all inbounds. Keep the panel-generated URI (it may contain a clean-IP or
@@ -408,7 +406,7 @@ export class ThreeXUIAdapter implements PanelAdapter {
         .filter((uri: string) => {
           try {
             const parsed = new URL(uri);
-            return Number(parsed.port || (parsed.protocol === "vless:" ? 443 : 0)) === Number(inbound.port);
+            return inbounds.some((item) => Number(parsed.port || (parsed.protocol === "vless:" ? 443 : 0)) === Number(item.port));
           } catch {
             return false;
           }
@@ -428,12 +426,14 @@ export class ThreeXUIAdapter implements PanelAdapter {
       if (err?.response?.status !== 404 && err?.response?.status !== 405) throw err;
     }
 
-    const client = clientId ? this.findClient(inbound, clientId) : inbound.clients.find((c: any) => c.email === remoteId);
-    if (!client) throw new Error(`کاربر ${remoteId} روی اینباند 3x-ui پیدا نشد`);
-
     const host = new URL(this.creds.baseUrl).hostname;
-    const uri = buildThreeXUIUri(inbound, client, host);
-    return [{ protocol: inbound.protocol, uri, label: client.email ?? remoteId }];
+    const configs: RemoteConfig[] = [];
+    for (const item of inbounds) {
+      const itemClient = clientId ? this.findClient(item, clientId) : item.clients.find((c: any) => c.email === remoteId);
+      if (itemClient) configs.push({ protocol: item.protocol, uri: buildThreeXUIUri(item, itemClient, host), label: itemClient.email ?? remoteId });
+    }
+    if (configs.length === 0) throw new Error(`کاربر ${remoteId} روی اینباندهای انتخاب‌شده 3x-ui پیدا نشد`);
+    return configs;
   }
 }
 
