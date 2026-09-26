@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
-import { requireAdmin, AuthedRequest } from "../middleware/auth";
+import { requireAdmin, requireRole, AuthedRequest } from "../middleware/auth";
 import { getAdapter } from "../adapters";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
@@ -94,6 +94,7 @@ serversRouter.get(
 // credentials; an edit can use the already stored credentials via serverId.
 serversRouter.post(
   "/inbounds",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const lookupSchema = z.object({
       serverId: z.string().optional(),
@@ -137,6 +138,7 @@ serversRouter.post(
 
 serversRouter.post(
   "/",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = serverSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -170,6 +172,7 @@ serversRouter.post(
 // on that server with zero other changes needed.
 serversRouter.patch(
   "/:id",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const existing = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
@@ -222,6 +225,7 @@ serversRouter.patch(
 // server does not restore users who were individually disabled.
 serversRouter.patch(
   "/:id/status",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = z.object({ enabled: z.boolean() }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -276,6 +280,7 @@ serversRouter.patch(
 // Provision this server for every user that is not already linked to it.
 serversRouter.post(
   "/:id/users",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const server = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
@@ -331,6 +336,7 @@ serversRouter.post(
 // Remove this server from every user without deleting the server definition.
 serversRouter.delete(
   "/:id/users",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const server = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
@@ -374,6 +380,7 @@ serversRouter.delete(
 
 serversRouter.delete(
   "/:id",
+  requireRole("ADMIN"),
   asyncHandler(async (req: AuthedRequest, res) => {
     const existing = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
@@ -386,6 +393,7 @@ serversRouter.delete(
 
 serversRouter.post(
   "/:id/test",
+  requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const server = await prisma.server.findUnique({ where: { id: req.params.id } });
     if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
