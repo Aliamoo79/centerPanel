@@ -221,8 +221,10 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
   );
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
-  const [extraInboundId, setExtraInboundId] = useState(
-    initial?.extra?.inboundId !== undefined ? String(initial.extra.inboundId) : ""
+  const [extraInboundIds, setExtraInboundIds] = useState(
+    Array.isArray(initial?.extra?.inboundIds)
+      ? initial.extra.inboundIds.join(", ")
+      : initial?.extra?.inboundId !== undefined ? String(initial.extra.inboundId) : ""
   );
   const [useToken, setUseToken] = useState(initial?.extra?.authMethod === "token");
   const [x4gProtocol, setX4gProtocol] = useState(initial?.extra?.protocol ?? "vless-ws");
@@ -239,7 +241,8 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
     try {
       const extra: Record<string, any> = {};
       if (panelType === "THREEXUI") {
-        if (extraInboundId) extra.inboundId = Number(extraInboundId);
+        const inboundIds = [...new Set(extraInboundIds.split(/[\s,;]+/).map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
+        if (inboundIds.length > 0) extra.inboundIds = inboundIds;
         if (useToken) extra.authMethod = "token";
       }
       if (panelType === "X4G") {
@@ -361,7 +364,8 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
         {panelType === "THREEXUI" && (
           <div className="sm:col-span-2">
             <label className="block text-xs text-muted mb-1.5">شناسه Inbound برای ساخت کاربر جدید</label>
-            <Input value={extraInboundId} onChange={(e) => setExtraInboundId(e.target.value)} placeholder="مثلاً 1" dir="ltr" />
+            <Input value={extraInboundIds} onChange={(e) => setExtraInboundIds(e.target.value)} placeholder="مثلاً 1, 2, 3" dir="ltr" />
+            <p className="text-[11px] text-muted mt-1">چند شناسه را با کاما، فاصله یا خط جدید جدا کنید؛ کاربر در همه‌ی inboundهای انتخاب‌شده ساخته می‌شود.</p>
           </div>
         )}
         {panelType === "X4G" && (
