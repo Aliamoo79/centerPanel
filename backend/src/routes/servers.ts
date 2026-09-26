@@ -196,6 +196,105 @@ serversRouter.patch(
   })
 );
 
+// Provision this server for every user that is not already linked to it.
+serversRouter.post(
+  "/:id/users",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const server = await prisma.server.findUnique({ where: { id: req.params.id } });
+    if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+    if (server.status !== "ACTIVE") return res.status(400).json({ error: "ابتدا سرور را فعال کنید" });
+
+    const [users, existingLinks] = await Promise.all([
+      prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
+      prisma.userServerLink.findMany({ where: { serverId: server.id }, select: { userId: true } }),
+    ]);
+    const linkedUserIds = new Set(existingLinks.map((link) => link.userId));
+    const adapter = getAdapter(server.panelType as any, server);
+    const added: string[] = [];
+    const skipped: string[] = [];
+    const failed: { user: string; error: string }[] = [];
+
+    for (const user of users) {
+      if (linkedUserIds.has(user.id)) {
+        skipped.push(user.username);
+        continue;
+      }
+      try {
+        const { remoteId, remoteExtra } = await adapter.createUser({
+          username: user.username,
+          dataLimitBytes: user.dataLimitGB ? user.dataLimitGB * 1024 * 1024 * 1024 : null,
+          expireAt: user.expireAt,
+          ipLimit: user.ipLimit ?? null,
+        });
+        await prisma.userServerLink.create({
+          data: {
+            userId: user.id,
+            serverId: server.id,
+            remoteId,
+            remoteExtra: remoteExtra ? JSON.stringify(remoteExtra) : null,
+          },
+        });
+        added.push(user.username);
+      } catch (err: any) {
+        failed.push({ user: user.username, error: describePanelError(err) });
+      }
+    }
+
+    logger.info("server_added_to_all_users", `سرور «${server.name}» برای کاربران provision شد`, {
+      serverId: server.id,
+      addedCount: added.length,
+      skippedCount: skipped.length,
+      failedCount: failed.length,
+      admin: req.admin?.username,
+    });
+    res.json({ added, skipped, failed });
+  })
+);
+
+// Remove this server from every user without deleting the server definition.
+serversRouter.delete(
+  "/:id/users",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const server = await prisma.server.findUnique({ where: { id: req.params.id } });
+    if (!server) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+
+    const links = await prisma.userServerLink.findMany({
+      where: { serverId: server.id },
+      include: { user: { include: { links: { include: { server: true } } } } },
+    });
+    const adapter = getAdapter(server.panelType as any, server);
+    const removed: string[] = [];
+    const failed: { user: string; error: string }[] = [];
+
+    for (const link of links) {
+      try {
+        const remoteAccountStillUsed = link.user.links.some((other) => {
+          if (other.id === link.id) return false;
+          if (other.server.panelType !== server.panelType) return false;
+          if (other.server.baseUrl.replace(/\/$/, "").toLowerCase() !== server.baseUrl.replace(/\/$/, "").toLowerCase()) return false;
+          return other.remoteId === link.remoteId;
+        });
+        if (!remoteAccountStillUsed) {
+          const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
+          await adapter.deleteUser(link.remoteId, remoteExtra);
+        }
+        await prisma.userServerLink.delete({ where: { id: link.id } });
+        removed.push(link.user.username);
+      } catch (err: any) {
+        failed.push({ user: link.user.username, error: describePanelError(err) });
+      }
+    }
+
+    logger.info("server_removed_from_all_users", `سرور «${server.name}» از کاربران حذف شد`, {
+      serverId: server.id,
+      removedCount: removed.length,
+      failedCount: failed.length,
+      admin: req.admin?.username,
+    });
+    res.json({ removed, failed });
+  })
+);
+
 serversRouter.delete(
   "/:id",
   asyncHandler(async (req: AuthedRequest, res) => {

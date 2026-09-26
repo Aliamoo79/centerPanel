@@ -68,6 +68,10 @@ export const api = {
   updateServer: (id: string, data: any) => request<any>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   setServerEnabled: (id: string, enabled: boolean) =>
     request<any>(`/servers/${id}/status`, { method: "PATCH", body: JSON.stringify({ enabled }) }),
+  addServerToAllUsers: (id: string) =>
+    request<{ added: string[]; skipped: string[]; failed: { user: string; error: string }[] }>(`/servers/${id}/users`, { method: "POST" }),
+  removeServerFromAllUsers: (id: string) =>
+    request<{ removed: string[]; failed: { user: string; error: string }[] }>(`/servers/${id}/users`, { method: "DELETE" }),
   deleteServer: (id: string) => request<void>(`/servers/${id}`, { method: "DELETE" }),
   testServer: (id: string) => request<{ ok: boolean; message?: string }>(`/servers/${id}/test`, { method: "POST" }),
 
