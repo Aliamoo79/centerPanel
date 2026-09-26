@@ -18,6 +18,7 @@ const serverSchema = z.object({
   password: z.string(),
   extra: z.string().nullable(),
   remarkPrefix: z.string().nullable(),
+  alternateConfigHosts: z.union([z.string(), z.array(z.string())]).nullable().optional(),
   status: z.enum(["ACTIVE", "DISABLED"]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -90,7 +91,8 @@ backupRouter.post(
       await tx.user.deleteMany();
       await tx.server.deleteMany();
       for (const server of servers) {
-        await tx.server.create({ data: { ...server, createdAt: new Date(server.createdAt), updatedAt: new Date(server.updatedAt) } });
+        const alternateConfigHosts = Array.isArray(server.alternateConfigHosts) ? JSON.stringify(server.alternateConfigHosts) : server.alternateConfigHosts ?? null;
+        await tx.server.create({ data: { ...server, alternateConfigHosts, createdAt: new Date(server.createdAt), updatedAt: new Date(server.updatedAt) } });
       }
       for (const user of users) {
         await tx.user.create({

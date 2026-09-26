@@ -20,6 +20,7 @@ const serverSchema = z.object({
   // "mci-x4g" -> configs are labeled "mci-x4g-<username>". Empty/omitted
   // keeps whatever remark the panel itself generated.
   remarkPrefix: z.string().trim().max(64).optional(),
+  alternateConfigHosts: z.string().max(2048).optional(),
 });
 
 function validateCredentials(data: { panelType: string; username?: string; password?: string; extra?: Record<string, any> }): string | null {
@@ -37,6 +38,12 @@ function cleanExtra(extra?: Record<string, any>): string | null {
   return JSON.stringify(extra);
 }
 
+function cleanAlternateConfigHosts(value?: string): string | null {
+  if (value === undefined) return null;
+  const hosts = [...new Set(value.split(/[\s,;]+/).map((host) => host.trim().toLowerCase()).filter(Boolean))];
+  return hosts.length > 0 ? JSON.stringify(hosts) : null;
+}
+
 function toPublic(server: any) {
   // never send the panel password back to the client
   const { password, ...rest } = server;
@@ -48,7 +55,16 @@ function toPublic(server: any) {
       extra = null;
     }
   }
-  return { ...rest, extra, hasPassword: Boolean(password) };
+  let alternateConfigHosts: string[] = [];
+  if (rest.alternateConfigHosts) {
+    try {
+      const parsed = typeof rest.alternateConfigHosts === "string" ? JSON.parse(rest.alternateConfigHosts) : rest.alternateConfigHosts;
+      alternateConfigHosts = Array.isArray(parsed) ? parsed.filter((host): host is string => typeof host === "string") : [];
+    } catch {
+      alternateConfigHosts = [];
+    }
+  }
+  return { ...rest, extra, alternateConfigHosts, hasPassword: Boolean(password) };
 }
 
 serversRouter.get(
@@ -81,6 +97,7 @@ serversRouter.post(
         password: parsed.data.password ?? "",
         extra: cleanExtra(parsed.data.extra),
         remarkPrefix: parsed.data.remarkPrefix || null,
+        alternateConfigHosts: cleanAlternateConfigHosts(parsed.data.alternateConfigHosts),
       },
     });
     logger.info("server_created", `سرور «${server.name}» (${server.panelType}) اضافه شد`, {
@@ -115,6 +132,7 @@ serversRouter.patch(
         ...(rest.username !== undefined ? { username: rest.username } : {}),
         ...(rest.password !== undefined ? { password: rest.password } : {}),
         ...(rest.remarkPrefix !== undefined ? { remarkPrefix: rest.remarkPrefix || null } : {}),
+        ...(rest.alternateConfigHosts !== undefined ? { alternateConfigHosts: cleanAlternateConfigHosts(rest.alternateConfigHosts) } : {}),
         ...(extra !== undefined ? { extra: cleanExtra(extra) } : {}),
       },
     });

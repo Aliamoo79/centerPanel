@@ -104,6 +104,7 @@ export default function Servers() {
                   <p className="text-xs text-muted font-nums mt-0.5 truncate">
                     {panelLabel(s.panelType)} · {s.baseUrl} · {s._count?.links ?? 0} کاربر
                     {s.remarkPrefix && <> · remark: {s.remarkPrefix}-name</>}
+                    {s.alternateConfigHosts?.length > 0 && <> · alternate: {s.alternateConfigHosts.join(", ")}</>}
                   </p>
                 </div>
               </div>
@@ -143,6 +144,9 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
   const [panelType, setPanelType] = useState(initial?.panelType ?? "THREEXUI");
   const [baseUrl, setBaseUrl] = useState(initial?.baseUrl ?? "");
   const [remarkPrefix, setRemarkPrefix] = useState(initial?.remarkPrefix ?? "");
+  const [alternateConfigHosts, setAlternateConfigHosts] = useState(
+    Array.isArray(initial?.alternateConfigHosts) ? initial.alternateConfigHosts.join("\n") : ""
+  );
   const [username, setUsername] = useState(initial?.username ?? "");
   const [password, setPassword] = useState("");
   const [extraInboundId, setExtraInboundId] = useState(
@@ -174,7 +178,7 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
       if (panelType === "NAHAN") {
         if (nahanApiRoute) extra.apiRoute = nahanApiRoute;
       }
-      const payload: any = { name, panelType, baseUrl, extra, remarkPrefix };
+      const payload: any = { name, panelType, baseUrl, extra, remarkPrefix, alternateConfigHosts };
       if (panelType !== "X4G" && panelType !== "NAHAN" && !useToken && username) payload.username = username;
       if (password) payload.password = password;
 
@@ -198,6 +202,11 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
         <div>
           <label className="block text-xs text-muted mb-1.5">نام سرور (دلخواه)</label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثلاً Germany-1" required />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-xs text-muted mb-1.5">Alternate config hosts — optional</label>
+          <textarea value={alternateConfigHosts} onChange={(e) => setAlternateConfigHosts(e.target.value)} placeholder="speedtest.net" rows={2} dir="ltr" className="flex min-h-[72px] w-full rounded-md border border-line bg-panel2 px-3 py-2 text-sm outline-none transition-colors focus:border-primary" />
+          <p className="text-[11px] text-muted mt-1">One hostname per line. Each host receives a duplicate config using the same 3x-ui user, UUID, quota, and expiry.</p>
         </div>
         <div>
           <label className="block text-xs text-muted mb-1.5">نوع پنل</label>
