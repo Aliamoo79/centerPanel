@@ -211,6 +211,17 @@ export class ThreeXUIAdapter implements PanelAdapter {
     };
   }
 
+  async syncUserInbounds(remoteId: string, inboundIds: number[]): Promise<void> {
+    const ids = [...new Set(inboundIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
+    if (ids.length === 0) throw new Error("At least one 3x-ui inbound is required");
+    const c = await this.authedClient();
+    const response = await c.post(`/panel/api/clients/${encodeURIComponent(remoteId)}/attach`, { inboundIds: ids });
+    if (!response.data || response.data.success === false) {
+      throw new Error(response.data?.msg ?? `Failed to attach ${remoteId} to the selected 3x-ui inbounds`);
+    }
+    ids.forEach((id) => this.inboundCache.delete(id));
+  }
+
   async getUserState(remoteId: string, remoteExtra?: Record<string, unknown> | null): Promise<RemoteUserState> {
     const c = await this.authedClient();
     const res = await c.get(`/panel/api/clients/traffic/${encodeURIComponent(remoteId)}`);
