@@ -441,6 +441,14 @@ export class ThreeXUIAdapter implements PanelAdapter {
           protocol: uri.slice(0, uri.indexOf(":")),
           uri,
           label: remoteId,
+          inboundId: inbounds.find((item) => {
+            try {
+              const parsed = new URL(uri);
+              return Number(parsed.port || (parsed.protocol === "vless:" ? 443 : 0)) === Number(item.port);
+            } catch {
+              return false;
+            }
+          })?.id,
         }));
       }
     } catch (err: any) {
@@ -454,7 +462,7 @@ export class ThreeXUIAdapter implements PanelAdapter {
     const configs: RemoteConfig[] = [];
     for (const item of inbounds) {
       const itemClient = clientId ? this.findClient(item, clientId) : item.clients.find((c: any) => c.email === remoteId);
-      if (itemClient) configs.push({ protocol: item.protocol, uri: buildThreeXUIUri(item, itemClient, host), label: itemClient.email ?? remoteId });
+      if (itemClient) configs.push({ protocol: item.protocol, uri: buildThreeXUIUri(item, itemClient, host), label: itemClient.email ?? remoteId, inboundId: Number(item.id) });
     }
     if (configs.length === 0) throw new Error(`کاربر ${remoteId} روی اینباندهای انتخاب‌شده 3x-ui پیدا نشد`);
     return configs;

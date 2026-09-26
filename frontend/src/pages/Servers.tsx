@@ -231,6 +231,11 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
     const raw = Array.isArray(initial?.extra?.inboundIds) ? initial.extra.inboundIds : [initial?.extra?.inboundId];
     return [...new Set(raw.map((id: any) => Number(id)).filter((id: number) => Number.isInteger(id) && id > 0))];
   });
+  const [inboundRemarkPrefixes, setInboundRemarkPrefixes] = useState<Record<string, string>>(
+    initial?.extra?.inboundRemarkPrefixes && typeof initial.extra.inboundRemarkPrefixes === "object"
+      ? initial.extra.inboundRemarkPrefixes
+      : {}
+  );
   const [loadingInbounds, setLoadingInbounds] = useState(false);
   const [useToken, setUseToken] = useState(initial?.extra?.authMethod === "token");
   const [x4gProtocol, setX4gProtocol] = useState(initial?.extra?.protocol ?? "vless-ws");
@@ -275,6 +280,12 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
           : [...new Set(extraInboundIds.split(/[\s,;]+/).map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0))];
         if (inboundIds.length === 0) throw new Error("حداقل یک inbound را انتخاب کنید");
         if (inboundIds.length > 0) extra.inboundIds = inboundIds;
+        const prefixes = Object.fromEntries(
+          inboundIds
+            .map((id) => [String(id), (inboundRemarkPrefixes[String(id)] ?? "").trim()] as const)
+            .filter(([, prefix]) => prefix.length > 0)
+        );
+        if (Object.keys(prefixes).length > 0) extra.inboundRemarkPrefixes = prefixes;
         if (useToken) extra.authMethod = "token";
       }
       if (panelType === "X4G") {
@@ -406,7 +417,7 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
                 {inboundOptions.map((inbound) => {
                   const checked = selectedInboundIds.includes(inbound.id);
                   return (
-                    <label key={inbound.id} className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${checked ? "bg-primary/10" : "hover:bg-white/[.03]"}`}>
+                    <div key={inbound.id} className={`flex flex-wrap items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${checked ? "bg-primary/10" : "hover:bg-white/[.03]"}`}>
                       <input
                         type="checkbox"
                         checked={checked}
@@ -415,7 +426,17 @@ function ServerForm({ initial, onClose, onSaved }: { initial: any | null; onClos
                       <span className="font-nums text-muted">#{inbound.id}</span>
                       <span className="min-w-0 flex-1 truncate">{inbound.remark || "بدون نام"}</span>
                       <span className="text-xs text-muted font-nums">{inbound.protocol || "—"}{inbound.port ? ` : ${inbound.port}` : ""}</span>
-                    </label>
+                      {checked && (
+                        <Input
+                          className="w-full sm:w-44"
+                          value={inboundRemarkPrefixes[String(inbound.id)] ?? ""}
+                          onChange={(event) => setInboundRemarkPrefixes((current) => ({ ...current, [inbound.id]: event.target.value }))}
+                          placeholder="پیشوند Remark"
+                          dir="ltr"
+                          aria-label={`Remark prefix for inbound ${inbound.id}`}
+                        />
+                      )}
+                    </div>
                   );
                 })}
               </div>
