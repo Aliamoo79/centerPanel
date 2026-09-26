@@ -6,6 +6,7 @@ import { getAdapter } from "../adapters";
 import { asyncHandler } from "../lib/asyncHandler";
 import { logger } from "../lib/logger";
 import { describePanelError } from "../lib/errors";
+import { ThreeXUIAdapter } from "../adapters/threexui";
 
 export const serversRouter = Router();
 serversRouter.use(requireAdmin);
@@ -76,6 +77,51 @@ serversRouter.get(
       include: { _count: { select: { links: true } } },
     });
     res.json(servers.map(toPublic));
+  })
+);
+
+// Load selectable inbounds for the server form. A new server sends its
+// credentials; an edit can use the already stored credentials via serverId.
+serversRouter.post(
+  "/inbounds",
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const lookupSchema = z.object({
+      serverId: z.string().optional(),
+      panelType: z.literal("THREEXUI").optional(),
+      baseUrl: z.string().url().optional(),
+      username: z.string().optional(),
+      password: z.string().optional(),
+      extra: z.record(z.any()).optional(),
+    });
+    const parsed = lookupSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const existing = parsed.data.serverId
+      ? await prisma.server.findUnique({ where: { id: parsed.data.serverId } })
+      : null;
+    if (parsed.data.serverId && !existing) return res.status(404).json({ error: "سرور مورد نظر پیدا نشد" });
+    const credentials = existing
+      ? {
+          baseUrl: parsed.data.baseUrl ?? existing.baseUrl,
+          username: parsed.data.username ?? existing.username,
+          password: parsed.data.password || existing.password,
+          extra: parsed.data.extra ?? (existing.extra ? JSON.parse(existing.extra) : null),
+        }
+      : {
+          baseUrl: parsed.data.baseUrl,
+          username: parsed.data.username,
+          password: parsed.data.password,
+          extra: parsed.data.extra,
+        };
+    if (!credentials.baseUrl) return res.status(400).json({ error: "آدرس پنل الزامی است" });
+    const adapter = new ThreeXUIAdapter({
+      baseUrl: credentials.baseUrl,
+      username: credentials.username ?? "",
+      password: credentials.password ?? "",
+      extra: credentials.extra ?? null,
+    });
+    if (!adapter.listInbounds) return res.status(400).json({ error: "این پنل امکان دریافت inboundها را ندارد" });
+    res.json(await adapter.listInbounds());
   })
 );
 
