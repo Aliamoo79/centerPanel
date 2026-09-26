@@ -37,6 +37,7 @@ model Server {
   password    String // panel admin password (consider secrets manager in prod)
   extra       String? // JSON blob for panel-specific extras (e.g. inboundIds for 3x-ui)
   remarkPrefix String? // if set, every config's remark (the #fragment in vless://.../trojan://...) is rewritten to "{remarkPrefix}-{username}" instead of whatever the panel generated
+  alternateConfigHosts String? // JSON array of extra connection hostnames to emit for each panel config
   status      String    @default("ACTIVE") // "ACTIVE" | "DISABLED"
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

@@ -38,6 +38,27 @@ function withRemark(uri: string, remark: string): string {
   return `${base}#${encodeURIComponent(remark)}`;
 }
 
+function alternateHosts(server: { alternateConfigHosts?: string | null }): string[] {
+  if (!server.alternateConfigHosts) return [];
+  try {
+    const hosts = JSON.parse(server.alternateConfigHosts);
+    return Array.isArray(hosts) ? hosts.filter((host): host is string => typeof host === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function withHost(uri: string, host: string): string | null {
+  try {
+    const parsed = new URL(uri);
+    if (!parsed.hostname || parsed.hostname.toLowerCase() === host.toLowerCase()) return null;
+    parsed.hostname = host;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 export interface SubscriptionPayload {
   /** Raw newline-separated share URIs (vless://, vmess://, trojan://, ...) */
   rawConfigs: string[];
@@ -93,18 +114,23 @@ export async function buildSubscription(token: string): Promise<SubscriptionPayl
         const remoteExtra = link.remoteExtra ? JSON.parse(link.remoteExtra) : null;
         const configs = await withTimeout(adapter.getConfigs(link.remoteId, remoteExtra), CONFIG_FETCH_TIMEOUT_MS);
         const prefix = (link.server as any).remarkPrefix as string | null;
-        return configs
+        const hosts = alternateHosts(link.server as any);
+        const expandedUris = configs
           .filter((cfg) => SUPPORTED_CONFIG_URI.test(cfg.uri))
-          .map((cfg, i) => {
+          .flatMap((cfg) => [
+            cfg.uri,
+            ...hosts.map((host) => withHost(cfg.uri, host)).filter((uri): uri is string => Boolean(uri)),
+          ]);
+        return expandedUris.map((uri, i) => {
           if (prefix) {
             // Base remark is "{prefix}-{username}"; if a server hands back
             // more than one config (e.g. multiple clean IPs), a numeric
             // suffix keeps them distinguishable in the client's config list
             // instead of colliding on the exact same name.
             const remark = i === 0 ? `${prefix}-${user.displayName}` : `${prefix}-${user.displayName}-${i + 1}`;
-            return withRemark(cfg.uri, remark);
+            return withRemark(uri, remark);
           }
-          return cfg.uri;
+          return uri;
         });
       } catch (err: any) {
         logger.warn("sub_configs_fetch_failed", `دریافت کانفیگ «${user.username}» از سرور «${link.server.name}» ناموفق بود: ${describePanelError(err)}`, {
