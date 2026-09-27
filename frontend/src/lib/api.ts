@@ -113,4 +113,12 @@ export const api = {
     const suffix = qs.toString() ? `?${qs}` : "";
     return request<{ entries: any[] }>(`/logs${suffix}`);
   },
+
+  getCredits: () => request<any>("/credits"),
+  addCredits: (data: { amount: number; description?: string }) =>
+    request<{ balance: number }>("/credits/deposit", { method: "POST", body: JSON.stringify(data) }),
+  updateCreditPricing: (data: {
+    creditsPerGB: number;
+    packages: Record<"1M_1U" | "1M_2U" | "2M_1U" | "2M_2U", number>;
+  }) => request<any>("/credits/pricing", { method: "PATCH", body: JSON.stringify(data) }),
 };
